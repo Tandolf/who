@@ -1,95 +1,37 @@
 #![allow(dead_code)]
 use anyhow::{Context, Ok};
 
-use super::{header::DNSHeader, DeSerialize, Serialize};
+use super::{header::Header, question::Question, record::Record, QClass, QType, Serialize};
 
 #[derive(Debug, Clone)]
-pub struct DNSPackage {
-    header: DNSHeader,
-    body: DNSBody,
+pub struct Message {
+    header: Header,
+    question: Question,
 }
 
-impl Serialize for DNSPackage {
+impl Serialize for Message {
     fn serialize(&self) -> Result<Vec<u8>, anyhow::Error> {
         let mut h = self.header.serialize().context("serializing header")?;
-        let mut b = self.body.serialize().context("serializing body")?;
+        let mut b = self.question.serialize().context("serializing body")?;
 
         h.append(&mut b);
         Ok(h)
     }
 }
 
-impl DeSerialize for DNSPackage {
-    type Item = DNSPackage;
-
-    fn deserialize(raw: &[u8]) -> Result<Self::Item, anyhow::Error> {
-        Ok(Self {
-            header: DNSHeader::deserialize(&raw[..12])?,
-            body: DNSBody::deserialize(&raw[12..]),
-        })
-    }
-}
-
-impl DNSPackage {
-    pub fn single(name: impl Into<String>) -> DNSPackage {
+impl Message {
+    pub fn single(name: impl Into<String>) -> Message {
         Self {
-            header: DNSHeader::request(),
-            body: DNSBody::new(name),
+            header: Header::request(),
+            question: Question::new(name, QType::A, QClass::IN),
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct DNSBody {
-    qname: String,
-    qtype: u16,
-    qclass: u16,
-}
-
-impl DNSBody {
-    pub fn new(name: impl Into<String>) -> Self {
-        Self {
-            qname: name.into(),
-            qtype: 0x0001,
-            qclass: 0x0001,
-        }
-    }
-
-    fn deserialize(raw: &[u8]) -> DNSBody {
-        DNSBody {
-            qname: "".to_owned(),
-            qtype: 1,
-            qclass: 1,
-        }
-    }
-}
-
-impl DeSerialize for DNSBody {
-    type Item = DNSBody;
-
-    fn deserialize(raw: &[u8]) -> Result<Self::Item, anyhow::Error> {
-        todo!()
-    }
-}
-
-impl Serialize for DNSBody {
-    fn serialize(&self) -> Result<Vec<u8>, anyhow::Error> {
-        let labels = self.qname.split('.');
-
-        let mut body = Vec::new();
-        for label in labels {
-            let length: u8 = label.chars().count().try_into().unwrap();
-            let label = label.as_bytes();
-            body.push(length);
-            body.extend(label);
-        }
-        body.push(0);
-        body.push((self.qtype >> 8) as u8);
-        body.push(self.qtype as u8);
-        body.push((self.qclass >> 8) as u8);
-        body.push(self.qclass as u8);
-        Ok(body)
-    }
+pub struct DNSResponse {
+    header: Header,
+    record: Record,
 }
 
 // OPCODE
@@ -142,20 +84,8 @@ mod test {
             0x00, 0x02, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
         ];
 
-        let q = DNSPackage::single("foobar");
+        let q = Message::single("foobar");
         let q = q.header;
-        let bytes = q.serialize().unwrap();
-
-        assert_eq!(&query, &bytes);
-    }
-
-    #[test]
-    fn serilize_body() {
-        let query: &[u8] = &[
-            0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00,
-        ];
-
-        let q = DNSBody::new("google.com");
         let bytes = q.serialize().unwrap();
 
         assert_eq!(&query, &bytes);
@@ -165,12 +95,65 @@ mod test {
     fn serilize_query() {
         let query: &[u8] = &[
             0x00, 0x02, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x06, 0x67,
-            0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00,
+            0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01,
         ];
 
-        let q = DNSPackage::single("google.com");
+        let q = Message::single("google.com");
         let bytes = q.serialize().unwrap();
 
         assert_eq!(&query, &bytes);
     }
+
+    // 0a00 020f 0035 8d63 008e 0ea1 a4c9 8180  .....5.c........
+    // 0001 0005 0000 0000 0462 6c6f 670c 746f  .........blog.to
+    // 0462 6c6f 670c 746f
+    // 6572 6b74 756d 6c61 7265 0363 6f6d 0000  erktumlare.com..
+    // 0100 01c0 0c00 0500 0100 000e 1000 1307  ................
+    // 7461 6e64 6f6c 6606 6769 7468 7562 0269  tandolf.github.i
+    // 6f00 c033 0001 0001 0000 0e10 0004 b9c7  o..3............
+    // 6c99 c033 0001 0001 0000 0e10 0004 b9c7  l..3............
+    // 6d99 c033 0001 0001 0000 0e10 0004 b9c7  m..3............
+    // 6e99 c033 0001 0001 0000 0e10 0004 b9c7  n..3............
+    // 6f99
+
+    // ========== Header section ===========
+    // a4c9                                             -> Id
+    // 8180                                             -> Flags
+    // 0001                                             -> QDCount
+    // 0005                                             -> ANCount
+    // 0000                                             -> NSCount
+    // 0000                                             -> ARCount
+    //
+    // ========== Question Section ===========
+    // 0462 6c6f 67                                     -> length 4 + ASCII "blog"
+    // 0c 746f 6572 6b74 756d 6c61 7265                 -> length 12 + text "toerktumlare"
+    // 0363 6f6d                                        -> length 3 + text "com"
+    // 00                                               -> null termination
+    // 0001                                             -> QClass
+    // 0001                                             -> QType
+    //
+    // ======== Resource record CNAME ========
+    // c00c                                             -> pointer to byte 12 from the ID-byte (compression) name
+    // 0005                                             -> Type (CNAME)
+    // 0001                                             -> Class (IN, internet)
+    // 0000 0e10                                        -> TTL (time to live)
+    // 0013                                             -> Rd length: 19 octets (number of octets in the next field)
+    // 0774 616e 646f 6c66 0667 6974 6875 6202 696f     -> cname data (tandolf.github.com)
+    // 00                                               -> null termination
+    //
+    // ========== Resource records A =========
+    // c033                                             -> Pointer from ID to name 51 bytes
+    // 0001                                             -> Type (A)
+    // 0001                                             -> Class (IN, internet)
+    // 0000 0e10                                        -> TTL (time to live) 3600 seconds
+    // 0004                                             -> number of bytes in the data field (4)
+    // b9c7 6c99                                        -> 4 bytes IP-address
+    //
+    //
+    // c033
+    // 0001 0001 0000 0e10 0004 b9c7 6d99
+    // c033
+    // 0001 0001 0000 0e10 0004 b9c7 6e99
+    // c033
+    // 0001 0001 0000 0e10 0004 b9c7 6f99
 }

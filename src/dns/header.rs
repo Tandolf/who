@@ -1,6 +1,6 @@
 use nom::{bits, combinator::map, complete::take, error::Error, Finish, IResult};
 
-use super::{DeSerialize, Serialize};
+use super::{DeSerialize, Global, Serialize};
 
 //  The header contains the following fields:
 //
@@ -20,8 +20,8 @@ use super::{DeSerialize, Serialize};
 //  |                    ARCOUNT                    |
 //  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //
-#[derive(Debug, Clone)]
-pub struct DNSHeader {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Header {
     // A 16 bit identifier assigned by the program that generates any kind of query
     pub id: u16,
 
@@ -64,7 +64,7 @@ pub struct DNSHeader {
     pub ar_count: u16,
 }
 
-impl DNSHeader {
+impl Header {
     pub fn new(
         id: u16,
         qr: bool,
@@ -78,7 +78,7 @@ impl DNSHeader {
         an_count: u16,
         ns_count: u16,
         ar_count: u16,
-    ) -> DNSHeader {
+    ) -> Header {
         Self {
             id,
             qr,
@@ -97,8 +97,8 @@ impl DNSHeader {
     }
 
     // Default header when making a plain request
-    pub(crate) fn request() -> DNSHeader {
-        DNSHeader::new(
+    pub(crate) fn request() -> Header {
+        Header::new(
             0x0002,
             false,
             Opcode::Query,
@@ -115,7 +115,7 @@ impl DNSHeader {
     }
 }
 
-impl Serialize for DNSHeader {
+impl Serialize for Header {
     fn serialize(&self) -> Result<Vec<u8>, anyhow::Error> {
         let flags_upper: u8 = (self.qr as u8) << 7;
         let flags_upper = match self.opcode {
@@ -156,36 +156,24 @@ impl Serialize for DNSHeader {
 
 type BitInput<'a> = (&'a [u8], usize);
 
-fn parse_flags(input: BitInput) -> IResult<BitInput, DNSHeader> {
+fn parse_header(input: BitInput) -> IResult<BitInput, Header> {
     let (input, id) = parse_u16(input)?;
-    dbg!(&id);
     let (input, qr) = parse_bool(input)?;
-    dbg!(&qr);
     let (input, opcode) = parse_opcode(input)?;
-    dbg!(&opcode);
     let (input, aa) = parse_bool(input)?;
-    dbg!(&aa);
     let (input, rc) = parse_bool(input)?;
-    dbg!(&rc);
     let (input, rd) = parse_bool(input)?;
-    dbg!(&rd);
     let (input, ra) = parse_bool(input)?;
-    dbg!(&ra);
     let (input, _) = skip(input, 3)?;
     let (input, r_code) = parse_rcode(input)?;
-    dbg!(&r_code);
     let (input, qd_count) = parse_u16(input)?;
-    dbg!(&qd_count);
     let (input, an_count) = parse_u16(input)?;
-    dbg!(&an_count);
     let (input, ns_count) = parse_u16(input)?;
-    dbg!(&ns_count);
     let (input, ar_count) = parse_u16(input)?;
-    dbg!(&ar_count);
 
     Ok((
         input,
-        DNSHeader::new(
+        Header::new(
             id, qr, opcode, aa, rc, rd, ra, r_code, qd_count, an_count, ns_count, ar_count,
         ),
     ))
@@ -225,16 +213,18 @@ fn parse_rcode(i: BitInput) -> IResult<BitInput, ResponseCode> {
     })(i)
 }
 
-impl DeSerialize for DNSHeader {
-    type Item = DNSHeader;
-    fn deserialize(raw: &[u8]) -> Result<Self::Item, anyhow::Error> {
-        let header =
-            bits::<&[u8], DNSHeader, Error<(&[u8], usize)>, Error<&[u8]>, _>(parse_flags)(raw)
+impl<'a> DeSerialize<'a> for Header {
+    type Item = (&'a [u8], Header);
+    fn deserialize(
+        buffer: &'a [u8],
+        _global: &mut Global<'a>,
+    ) -> Result<Self::Item, anyhow::Error> {
+        let (buffer, header) =
+            bits::<&[u8], Header, Error<(&[u8], usize)>, Error<&[u8]>, _>(parse_header)(buffer)
                 .finish()
-                .unwrap() // Handle error better so that anyhow works
-                .1;
+                .unwrap(); // Handle error better so that anyhow works;
 
-        Ok(header)
+        Ok((buffer, header))
     }
 }
 
@@ -242,7 +232,7 @@ impl DeSerialize for DNSHeader {
 //
 // A four bit field that specifies kind of query in this message. This value is set by the
 // originator of a query and copied into the response.  The values are:
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Opcode {
     // a standard query (QUERY)
     Query = 0,
@@ -255,7 +245,7 @@ pub enum Opcode {
 }
 
 // RCODE Response code - this 4 bit field is set as part of responses.  The values have the following interpretation:
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ResponseCode {
     // No error condition
     NoError = 0,
@@ -278,18 +268,41 @@ pub enum ResponseCode {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use pretty_assertions::assert_eq;
 
-    use crate::dns::DeSerialize;
+    use crate::dns::{DeSerialize, Global};
 
-    use super::DNSHeader;
+    use super::{Header, Opcode, ResponseCode};
 
     #[test]
-    fn parse_qr() {
-        let bytes = vec![0x00, 0x02, 0x80];
+    fn header_deserialize() {
+        let bytes = vec![
+            0x00, 0x02, 0x81, 0x80, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        ];
 
-        let msg = DNSHeader::deserialize(&bytes).unwrap();
+        let expected = Header::new(
+            2,
+            true,
+            Opcode::Query,
+            false,
+            false,
+            true,
+            true,
+            ResponseCode::NoError,
+            1,
+            0,
+            0,
+            1,
+        );
 
-        assert_eq!(msg.qr, true);
+        let mut global = Global {
+            cache: HashMap::new(),
+            source: &bytes,
+        };
+        let (_, actual) = Header::deserialize(&bytes, &mut global).unwrap();
+
+        assert_eq!(expected, actual);
     }
 }
