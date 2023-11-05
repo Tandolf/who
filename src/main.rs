@@ -21,10 +21,6 @@ async fn main() -> Result<()> {
     let _len = sock.send_to(&m, "1.1.1.1:53").await?;
     let (_, _) = sock.recv_from(&mut buffer).await?;
 
-    // for b in &buf[..len] {
-    //     print!("0x{:02x}, ", *b);
-    // }
-
     let mut global = Global {
         cache: HashMap::new(),
         source: &buffer,
@@ -36,11 +32,6 @@ async fn main() -> Result<()> {
     dbg!(&header);
     dbg!(&question);
     dbg!(&record);
-
-    // let response = DNSResponse::deserialize(&buf);
-
-    // println!("{:?}", response);
-    //
 
     Ok(())
 }

@@ -31,9 +31,6 @@ pub fn parse_name_cached<'a>(
     if buffer[0] != 0x00 {
         // Storing a reference outside the loop for mutation
         let mut buffer = buffer;
-        dbg!(source.len());
-        dbg!(buffer[1..].len());
-
         // Index used for caching if cache available
         let index = source.len() - buffer.len();
         loop {
@@ -47,8 +44,6 @@ pub fn parse_name_cached<'a>(
         }
         let token = tokens.join(".");
         if let Some(cache) = cache {
-            dbg!(&cache);
-            dbg!(&index);
             cache.insert(index as u32, token.clone());
         }
         return Ok((&buffer[1..], token.clone()));
