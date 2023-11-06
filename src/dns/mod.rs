@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use std::fmt::{self, Display, Formatter};
+
 pub mod header;
 pub mod message;
 pub mod parse_utils;
@@ -45,6 +47,12 @@ pub enum QType {
     STAR = 255,  // 255 A request for all records
 }
 
+impl Display for QType {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 // CLASS fields appear in resource records.  The following CLASS mnemonics
 // and values are defined:
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -54,4 +62,10 @@ pub enum QClass {
     CH = 3,     // 3 the CHAOS class
     HS = 4,     // 4 Hesiod [Dyer 87]
     STAR = 255, // 255 any class
+}
+
+impl Display for QClass {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }

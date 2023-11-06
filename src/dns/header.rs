@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 use nom::{bits, combinator::map, complete::take, error::Error, Finish, IResult};
 
 use super::{Buffer, DeSerialize, Serialize};
@@ -227,6 +229,16 @@ impl<'a> DeSerialize<'a> for Header {
     }
 }
 
+impl Display for Header {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            ";; OPCODE: {}, STATUS: {} id: {}\n;; {}, {}, {},\n;; QUERY: {}, ANSWERS: {}, AUTHORITY: {}, ADDITIONAL: {}\n",
+            self.opcode, self.r_code, self.id, if self.qr { "qr"} else {""}, if self.rd {"rd"} else {""}, if self.ra {"ra"} else {""}, self.qd_count, self.an_count, self.ns_count, self.ar_count
+        )
+    }
+}
+
 // OPCODE
 //
 // A four bit field that specifies kind of query in this message. This value is set by the
@@ -241,6 +253,12 @@ pub enum Opcode {
     Status = 2,
     // reserved for future use (value 3-15)
     Reserved,
+}
+
+impl Display for Opcode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 // RCODE Response code - this 4 bit field is set as part of responses.  The values have the following interpretation:
@@ -263,6 +281,12 @@ pub enum ResponseCode {
 
     // Refused: The name server refuses to perform the specified operation for policy reasons.
     Refused = 5,
+}
+
+impl Display for ResponseCode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 #[cfg(test)]

@@ -1,6 +1,7 @@
 use nom::error::VerboseError;
 use nom::Finish;
 use nom::IResult;
+use std::fmt::Display;
 use std::net::Ipv4Addr;
 use std::time::Duration;
 
@@ -153,6 +154,12 @@ impl<'a> DeSerialize<'a> for Record {
     fn deserialize(buffer: &'a mut Buffer<'a>) -> Result<Self::Item, anyhow::Error> {
         let (buffer, record) = parse_record(buffer)?;
         Ok((buffer, record))
+    }
+}
+
+impl Display for Record {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, ";{}\t\t\t{}\t{}", self.name, self.qclass, self.qtype)
     }
 }
 

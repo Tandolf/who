@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+use std::fmt::Display;
+
 use anyhow::{Context, Ok};
 
 use super::{
@@ -8,9 +10,9 @@ use super::{
 
 #[derive(Debug, Clone)]
 pub struct Message {
-    header: Header,
-    question: Question,
-    records: Vec<Record>,
+    pub header: Header,
+    pub question: Question,
+    pub records: Vec<Record>,
 }
 
 impl Serialize for Message {
@@ -31,7 +33,6 @@ impl<'a> DeSerialize<'a> for Message {
         let (buffer, question) = Question::deserialize(buffer).unwrap();
 
         let mut records = Vec::with_capacity(header.an_count as usize);
-        dbg!(&buffer);
         let mut buf = buffer;
         for _ in 0..header.an_count {
             let (buffer, record) = Record::deserialize(buf).unwrap();
@@ -65,6 +66,20 @@ impl Message {
             question: Question::new(name, QType::TXT, QClass::IN),
             records: Vec::with_capacity(0),
         }
+    }
+}
+
+impl Display for Message {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, ";; ========= HEADER ==========").unwrap();
+        writeln!(f, "{}", self.header).unwrap();
+        writeln!(f, ";; ======== Question =========").unwrap();
+        writeln!(f, ";{}", self.question).unwrap();
+        writeln!(f, ";; ========= Records =========").unwrap();
+        for r in self.records.iter() {
+            write!(f, "{}", r).unwrap();
+        }
+        std::fmt::Result::Ok(())
     }
 }
 

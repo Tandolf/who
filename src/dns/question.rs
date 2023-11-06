@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use nom::Finish;
 
 use crate::Buffer;
@@ -85,6 +87,12 @@ impl<'a> DeSerialize<'a> for Question {
         buffer.current = buf;
 
         Ok((buffer, Question::new(name, qtype, qclass)))
+    }
+}
+
+impl Display for Question {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}\t\t\t{}\t{}", self.qname, self.qclass, self.qtype)
     }
 }
 
