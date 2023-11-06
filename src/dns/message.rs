@@ -10,7 +10,7 @@ use super::{
 pub struct Message {
     header: Header,
     question: Question,
-    record: Option<Record>,
+    records: Vec<Record>,
 }
 
 impl Serialize for Message {
@@ -24,19 +24,26 @@ impl Serialize for Message {
 }
 
 impl<'a> DeSerialize<'a> for Message {
-    type Item = (&'a Buffer<'a>, Message);
+    type Item = (&'a mut Buffer<'a>, Message);
 
     fn deserialize(buffer: &'a mut Buffer<'a>) -> Result<Self::Item, anyhow::Error> {
         let (buffer, header) = Header::deserialize(buffer).unwrap();
         let (buffer, question) = Question::deserialize(buffer).unwrap();
-        let (buffer, record) = Record::deserialize(buffer).unwrap();
+
+        let mut records = Vec::with_capacity(header.an_count as usize);
+        let mut buf = buffer;
+        for _ in 0..header.an_count {
+            let (buffer, record) = Record::deserialize(buf).unwrap();
+            records.push(record);
+            buf = buffer;
+        }
 
         Ok((
-            buffer,
+            buf,
             Message {
                 header,
                 question,
-                record: Some(record),
+                records,
             },
         ))
     }
@@ -47,7 +54,7 @@ impl Message {
         Self {
             header: Header::request(),
             question: Question::new(name, QType::A, QClass::IN),
-            record: None,
+            records: Vec::with_capacity(0),
         }
     }
 }
