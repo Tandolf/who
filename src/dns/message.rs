@@ -1,12 +1,16 @@
 #![allow(dead_code)]
 use anyhow::{Context, Ok};
 
-use super::{header::Header, question::Question, record::Record, QClass, QType, Serialize};
+use super::{
+    header::Header, question::Question, record::Record, Buffer, DeSerialize, QClass, QType,
+    Serialize,
+};
 
 #[derive(Debug, Clone)]
 pub struct Message {
     header: Header,
     question: Question,
+    record: Option<Record>,
 }
 
 impl Serialize for Message {
@@ -19,19 +23,33 @@ impl Serialize for Message {
     }
 }
 
+impl<'a> DeSerialize<'a> for Message {
+    type Item = (&'a Buffer<'a>, Message);
+
+    fn deserialize(buffer: &'a mut Buffer<'a>) -> Result<Self::Item, anyhow::Error> {
+        let (buffer, header) = Header::deserialize(buffer).unwrap();
+        let (buffer, question) = Question::deserialize(buffer).unwrap();
+        let (buffer, record) = Record::deserialize(buffer).unwrap();
+
+        Ok((
+            buffer,
+            Message {
+                header,
+                question,
+                record: Some(record),
+            },
+        ))
+    }
+}
+
 impl Message {
     pub fn single(name: impl Into<String>) -> Message {
         Self {
             header: Header::request(),
             question: Question::new(name, QType::A, QClass::IN),
+            record: None,
         }
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct DNSResponse {
-    header: Header,
-    record: Record,
 }
 
 // OPCODE

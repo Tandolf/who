@@ -1,7 +1,6 @@
 use nom::error::VerboseError;
 use nom::Finish;
 use nom::IResult;
-use std::collections::HashMap;
 use std::net::Ipv4Addr;
 use std::time::Duration;
 
@@ -11,7 +10,7 @@ use super::parse_utils::parse_qclass;
 use super::parse_utils::parse_qtype;
 use super::parse_utils::parse_rdlength;
 use super::parse_utils::parse_ttl;
-use super::Global;
+use super::Buffer;
 use super::{DeSerialize, QClass, QType};
 
 type VResult<I, O> = IResult<I, O, VerboseError<I>>;
@@ -102,23 +101,19 @@ impl Record {
     }
 }
 
-fn get_cached<'a>(
-    buffer: &'a [u8],
-    cache: &HashMap<u32, String>,
-) -> Result<(&'a [u8], String), anyhow::Error> {
-    let index = buffer[1];
-    let name = cache.get(&(index as u32)).unwrap();
-    Ok((&buffer[2..], name.clone()))
-}
-
 fn parse_record<'a>(
-    buf: &'a [u8],
-    global: &Global<'a>,
-) -> Result<(&'a [u8], Record), anyhow::Error> {
+    buf: &'a mut Buffer<'a>,
+) -> Result<(&'a mut Buffer<'a>, Record), anyhow::Error> {
+    let buffer = buf.current;
+    let source = buf.source;
     // If a pointer, then get the value from the cache
-    let (buffer, name) = match buf[0] {
-        0xC0 => get_cached(buf, &global.cache).unwrap(),
-        _ => parse_name(buf).finish().unwrap(),
+    let (buffer, name) = match buffer[0] {
+        0xC0 => {
+            let index = buffer[1] as usize;
+            let (_, name) = parse_name(&source[index..]).finish().unwrap();
+            (&buffer[2..], name)
+        }
+        _ => parse_name(buffer).finish().unwrap(),
     };
 
     let (buffer, qtype) = parse_qtype(buffer).finish().unwrap();
@@ -134,23 +129,27 @@ fn parse_record<'a>(
         _ => unimplemented!(),
     };
 
+    buf.current = buffer;
+
     Ok((
-        buffer,
+        buf,
         Record::new(name.clone(), qtype, qclass, ttl, rd_length, rdata),
     ))
 }
 
 impl<'a> DeSerialize<'a> for Record {
-    type Item = (&'a [u8], Record);
+    type Item = (&'a mut Buffer<'a>, Record);
 
-    fn deserialize(buffer: &'a [u8], global: &mut Global<'a>) -> Result<Self::Item, anyhow::Error> {
-        let (buffer, record) = parse_record(buffer, global)?;
+    fn deserialize(buffer: &'a mut Buffer<'a>) -> Result<Self::Item, anyhow::Error> {
+        let (buffer, record) = parse_record(buffer)?;
         Ok((buffer, record))
     }
 }
 
 #[cfg(test)]
 mod tests {
+
+    use std::collections::HashMap;
 
     use super::*;
 
@@ -161,7 +160,7 @@ mod tests {
             0x00, 0x01, 0x00, 0x00, 0x0e, 0x10, 0x00, 0x04, 0x01, 0x02, 0x03, 0x04,
         ];
 
-        let mut global = Global {
+        let mut global = Buffer {
             cache: HashMap::new(),
             source: &buffer,
         };

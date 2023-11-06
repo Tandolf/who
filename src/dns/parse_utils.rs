@@ -19,7 +19,19 @@ type VResult<I, O> = IResult<I, O, VerboseError<I>>;
 // 6google3com -> google.com
 //
 pub fn parse_name(buffer: &[u8]) -> VResult<&[u8], String> {
-    parse_name_cached(buffer, None, buffer)
+    let mut tokens: Vec<String> = Vec::new();
+
+    // Storing a reference outside the loop for mutation
+    let mut buffer = buffer;
+    // Index used for caching if cache available
+    while buffer[0] != 0x00 {
+        let (buf, length) = u8::<&[u8], VerboseError<&[u8]>>(buffer).unwrap();
+        let (buf, token) = take_token(buf, length as usize).unwrap();
+        tokens.push(token.to_owned());
+        buffer = buf;
+    }
+    let token = tokens.join(".");
+    Ok((&buffer[1..], token))
 }
 pub fn parse_name_cached<'a>(
     buffer: &'a [u8],

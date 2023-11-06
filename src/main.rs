@@ -1,10 +1,8 @@
-use std::collections::HashMap;
-
 use anyhow::{Context, Result};
 use dns::{message::Message, DeSerialize, Serialize};
 use tokio::net::UdpSocket;
 
-use crate::dns::{header::Header, question::Question, record::Record, Global};
+use crate::dns::Buffer;
 
 mod dns;
 
@@ -21,17 +19,13 @@ async fn main() -> Result<()> {
     let _len = sock.send_to(&m, "1.1.1.1:53").await?;
     let (_, _) = sock.recv_from(&mut buffer).await?;
 
-    let mut global = Global {
-        cache: HashMap::new(),
+    let mut buffer = Buffer {
+        current: &buffer,
         source: &buffer,
     };
-    let (buffer, header) = Header::deserialize(&buffer, &mut global).unwrap();
-    let (buffer, question) = Question::deserialize(buffer, &mut global).unwrap();
-    let (_buffer, record) = Record::deserialize(buffer, &mut global).unwrap();
 
-    dbg!(&header);
-    dbg!(&question);
-    dbg!(&record);
+    let (_buffer, message) = Message::deserialize(&mut buffer).unwrap();
 
+    dbg!(&message);
     Ok(())
 }

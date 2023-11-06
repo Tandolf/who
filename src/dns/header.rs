@@ -1,6 +1,6 @@
 use nom::{bits, combinator::map, complete::take, error::Error, Finish, IResult};
 
-use super::{DeSerialize, Global, Serialize};
+use super::{Buffer, DeSerialize, Serialize};
 
 //  The header contains the following fields:
 //
@@ -214,16 +214,15 @@ fn parse_rcode(i: BitInput) -> IResult<BitInput, ResponseCode> {
 }
 
 impl<'a> DeSerialize<'a> for Header {
-    type Item = (&'a [u8], Header);
-    fn deserialize(
-        buffer: &'a [u8],
-        _global: &mut Global<'a>,
-    ) -> Result<Self::Item, anyhow::Error> {
-        let (buffer, header) =
-            bits::<&[u8], Header, Error<(&[u8], usize)>, Error<&[u8]>, _>(parse_header)(buffer)
-                .finish()
-                .unwrap(); // Handle error better so that anyhow works;
+    type Item = (&'a mut Buffer<'a>, Header);
+    fn deserialize(buffer: &'a mut Buffer<'a>) -> Result<Self::Item, anyhow::Error> {
+        let (buf, header) = bits::<&[u8], Header, Error<(&[u8], usize)>, Error<&[u8]>, _>(
+            parse_header,
+        )(buffer.current)
+        .finish()
+        .unwrap(); // Handle error better so that anyhow works;
 
+        buffer.current = buf;
         Ok((buffer, header))
     }
 }
@@ -272,7 +271,7 @@ mod tests {
 
     use pretty_assertions::assert_eq;
 
-    use crate::dns::{DeSerialize, Global};
+    use crate::dns::{Buffer, DeSerialize};
 
     use super::{Header, Opcode, ResponseCode};
 
@@ -297,7 +296,7 @@ mod tests {
             1,
         );
 
-        let mut global = Global {
+        let mut global = Buffer {
             cache: HashMap::new(),
             source: &bytes,
         };

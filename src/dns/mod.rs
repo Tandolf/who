@@ -1,15 +1,13 @@
 #![allow(dead_code)]
 
-use std::collections::HashMap;
-
 pub mod header;
 pub mod message;
 pub mod parse_utils;
 pub mod question;
 pub mod record;
 
-pub struct Global<'a> {
-    pub cache: HashMap<u32, String>,
+pub struct Buffer<'a> {
+    pub current: &'a [u8],
     pub source: &'a [u8],
 }
 
@@ -19,7 +17,7 @@ pub trait Serialize {
 
 pub trait DeSerialize<'a> {
     type Item;
-    fn deserialize(buffer: &'a [u8], global: &mut Global<'a>) -> Result<Self::Item, anyhow::Error>;
+    fn deserialize(buffer: &'a mut Buffer<'a>) -> Result<Self::Item, anyhow::Error>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

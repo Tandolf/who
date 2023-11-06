@@ -1,9 +1,9 @@
 use nom::Finish;
 
-use crate::Global;
+use crate::Buffer;
 
 use super::{
-    parse_utils::{parse_name_cached, parse_qclass, parse_qtype},
+    parse_utils::{parse_name, parse_qclass, parse_qtype},
     DeSerialize, QClass, QType, Serialize,
 };
 
@@ -75,14 +75,14 @@ impl Serialize for Question {
 }
 
 impl<'a> DeSerialize<'a> for Question {
-    type Item = (&'a [u8], Question);
+    type Item = (&'a mut Buffer<'a>, Question);
 
-    fn deserialize(buffer: &'a [u8], global: &mut Global<'a>) -> Result<Self::Item, anyhow::Error> {
-        let (buffer, name) = parse_name_cached(buffer, Some(&mut global.cache), global.source)
-            .finish()
-            .unwrap();
-        let (buffer, qtype) = parse_qtype(buffer).finish().unwrap();
-        let (buffer, qclass) = parse_qclass(buffer).finish().unwrap();
+    fn deserialize(buffer: &'a mut Buffer<'a>) -> Result<Self::Item, anyhow::Error> {
+        let (buf, name) = parse_name(buffer.current).finish().unwrap();
+        let (buf, qtype) = parse_qtype(buf).finish().unwrap();
+        let (buf, qclass) = parse_qclass(buf).finish().unwrap();
+
+        buffer.current = buf;
 
         Ok((buffer, Question::new(name, qtype, qclass)))
     }
@@ -92,7 +92,7 @@ impl<'a> DeSerialize<'a> for Question {
 mod tests {
     use std::collections::HashMap;
 
-    use crate::dns::{DeSerialize, Global, QClass, QType};
+    use crate::dns::{Buffer, DeSerialize, QClass, QType};
 
     use super::Question;
 
@@ -111,7 +111,7 @@ mod tests {
             0x6c, 0x61, 0x72, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01,
         ];
 
-        let mut global = Global {
+        let mut global = Buffer {
             cache: HashMap::new(),
             source: &buffer,
         };
