@@ -31,6 +31,7 @@ impl<'a> DeSerialize<'a> for Message {
         let (buffer, question) = Question::deserialize(buffer).unwrap();
 
         let mut records = Vec::with_capacity(header.an_count as usize);
+        dbg!(&buffer);
         let mut buf = buffer;
         for _ in 0..header.an_count {
             let (buffer, record) = Record::deserialize(buf).unwrap();
@@ -181,4 +182,6 @@ mod test {
     // 0001 0001 0000 0e10 0004 b9c7 6e99
     // c033
     // 0001 0001 0000 0e10 0004 b9c7 6f99
+    //
+    //
 }

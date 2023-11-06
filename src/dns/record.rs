@@ -126,6 +126,10 @@ fn parse_record<'a>(
             let (buffer, address) = parse_ipv4(buffer).finish().unwrap();
             (buffer, RData::A(address))
         }
+        QType::CNAME => {
+            let (buffer, name) = parse_name(buffer).finish().unwrap();
+            (buffer, RData::CNAME(name))
+        }
         _ => unimplemented!(),
     };
 

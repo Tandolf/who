@@ -6,6 +6,7 @@ pub mod parse_utils;
 pub mod question;
 pub mod record;
 
+#[derive(Debug)]
 pub struct Buffer<'a> {
     pub current: &'a [u8],
     pub source: &'a [u8],

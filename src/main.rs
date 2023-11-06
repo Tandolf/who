@@ -12,10 +12,10 @@ async fn main() -> Result<()> {
         .await
         .context("could not bind")?;
 
-    let m = Message::single("tandolf.github.io");
+    let m = Message::single("blog.toerktumlare.com");
     let m = m.serialize().unwrap();
 
-    let mut buffer = [0; 128];
+    let mut buffer = [0; 1024];
     let _len = sock.send_to(&m, "1.1.1.1:53").await?;
     let (_, _) = sock.recv_from(&mut buffer).await?;
 

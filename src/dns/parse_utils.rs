@@ -81,6 +81,7 @@ pub fn parse_qclass(buffer: &[u8]) -> VResult<&[u8], QClass> {
 pub fn parse_qtype(buffer: &[u8]) -> VResult<&[u8], QType> {
     map(be_u16, |value: u16| match value {
         1 => QType::A,
+        5 => QType::CNAME,
         _ => panic!("Unknown QType returned: {}", value),
     })(buffer)
 }
