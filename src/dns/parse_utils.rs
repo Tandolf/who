@@ -11,6 +11,10 @@ use super::{QClass, QType};
 
 type VResult<I, O> = IResult<I, O, VerboseError<I>>;
 
+pub fn parse_string(buffer: &[u8], length: usize) -> VResult<&[u8], &str> {
+    take_token(buffer, length as usize)
+}
+
 // deserializes names in DNSRecords, format is ascii chars prefixed by a length, and ending with a
 // null termination. Example:
 //
@@ -82,6 +86,7 @@ pub fn parse_qtype(buffer: &[u8]) -> VResult<&[u8], QType> {
     map(be_u16, |value: u16| match value {
         1 => QType::A,
         5 => QType::CNAME,
+        16 => QType::TXT,
         _ => panic!("Unknown QType returned: {}", value),
     })(buffer)
 }

@@ -12,7 +12,8 @@ async fn main() -> Result<()> {
         .await
         .context("could not bind")?;
 
-    let m = Message::single("blog.toerktumlare.com");
+    // let m = Message::single("blog.toerktumlare.com");
+    let m = Message::txt("toerktumlare.com");
     let m = m.serialize().unwrap();
 
     let mut buffer = [0; 1024];

@@ -9,6 +9,7 @@ use super::parse_utils::parse_name;
 use super::parse_utils::parse_qclass;
 use super::parse_utils::parse_qtype;
 use super::parse_utils::parse_rdlength;
+use super::parse_utils::parse_string;
 use super::parse_utils::parse_ttl;
 use super::Buffer;
 use super::{DeSerialize, QClass, QType};
@@ -20,6 +21,7 @@ type VResult<I, O> = IResult<I, O, VerboseError<I>>;
 pub enum RData {
     A(Ipv4Addr),
     CNAME(String),
+    TXT(String),
 }
 
 // Resource record format
@@ -129,6 +131,10 @@ fn parse_record<'a>(
         QType::CNAME => {
             let (buffer, name) = parse_name(buffer).finish().unwrap();
             (buffer, RData::CNAME(name))
+        }
+        QType::TXT => {
+            let (buffer, txt) = parse_string(buffer, rd_length.into()).finish().unwrap();
+            (buffer, RData::TXT(txt.to_owned()))
         }
         _ => unimplemented!(),
     };

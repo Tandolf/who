@@ -58,6 +58,14 @@ impl Message {
             records: Vec::with_capacity(0),
         }
     }
+
+    pub fn txt(name: impl Into<String>) -> Message {
+        Self {
+            header: Header::request(),
+            question: Question::new(name, QType::TXT, QClass::IN),
+            records: Vec::with_capacity(0),
+        }
+    }
 }
 
 // OPCODE
