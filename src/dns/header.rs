@@ -291,17 +291,13 @@ impl Display for ResponseCode {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
-    use pretty_assertions::assert_eq;
-
-    use crate::dns::{Buffer, DeSerialize};
-
     use super::{Header, Opcode, ResponseCode};
+    use crate::dns::{Buffer, DeSerialize};
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn header_deserialize() {
-        let bytes = vec![
+        let raw = vec![
             0x00, 0x02, 0x81, 0x80, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
         ];
 
@@ -320,11 +316,11 @@ mod tests {
             1,
         );
 
-        let mut global = Buffer {
-            cache: HashMap::new(),
-            source: &bytes,
+        let mut buffer = Buffer {
+            current: &raw,
+            source: &raw,
         };
-        let (_, actual) = Header::deserialize(&bytes, &mut global).unwrap();
+        let (_, actual) = Header::deserialize(&mut buffer).unwrap();
 
         assert_eq!(expected, actual);
     }

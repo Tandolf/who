@@ -166,22 +166,20 @@ impl Display for Record {
 #[cfg(test)]
 mod tests {
 
-    use std::collections::HashMap;
-
     use super::*;
 
     #[test]
     fn parse_record() {
-        let buffer = vec![
+        let raw = vec![
             0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01,
             0x00, 0x01, 0x00, 0x00, 0x0e, 0x10, 0x00, 0x04, 0x01, 0x02, 0x03, 0x04,
         ];
 
-        let mut global = Buffer {
-            cache: HashMap::new(),
-            source: &buffer,
+        let mut buffer = Buffer {
+            current: &raw,
+            source: &raw,
         };
-        let (_, actual) = Record::deserialize(&buffer, &mut global).unwrap();
+        let (_, actual) = Record::deserialize(&mut buffer).unwrap();
 
         let expected = Record::new(
             "google.com".to_owned(),

@@ -1,4 +1,7 @@
+use std::process;
+
 use anyhow::{Context, Result};
+use clap::Parser;
 use dns::{message::Message, DeSerialize, Serialize};
 use tokio::net::UdpSocket;
 
@@ -6,13 +9,27 @@ use crate::dns::Buffer;
 
 mod dns;
 
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    address: String,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
+    let args = Args::parse();
+
+    if args.address.is_empty() {
+        eprintln!("please provide a valid address");
+        process::exit(1);
+    }
+
+    let m = Message::single(args.address);
+
     let sock = UdpSocket::bind("0.0.0.0:8080")
         .await
         .context("could not bind")?;
 
-    let m = Message::single("blog.github.com");
     // let m = Message::txt("toerktumlare.com");
     let m = m.serialize().unwrap();
 
@@ -26,8 +43,6 @@ async fn main() -> Result<()> {
     };
 
     let (_buffer, message) = Message::deserialize(&mut buffer).unwrap();
-
-    // dbg!(&message);
 
     println!("{}", message);
     Ok(())

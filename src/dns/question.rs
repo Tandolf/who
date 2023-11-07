@@ -98,11 +98,8 @@ impl Display for Question {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
-    use crate::dns::{Buffer, DeSerialize, QClass, QType};
-
     use super::Question;
+    use crate::dns::{Buffer, DeSerialize, QClass, QType};
 
     // ========== Question Section ===========
     // 0462 6c6f 67                                     -> length 4 + ASCII "blog"
@@ -114,16 +111,16 @@ mod tests {
     //
     #[test]
     fn deserialize_question() {
-        let buffer = vec![
+        let raw = vec![
             0x04, 0x62, 0x6c, 0x6f, 0x67, 0x0c, 0x74, 0x6f, 0x65, 0x72, 0x6b, 0x74, 0x75, 0x6d,
             0x6c, 0x61, 0x72, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01,
         ];
 
-        let mut global = Buffer {
-            cache: HashMap::new(),
-            source: &buffer,
+        let mut buffer = Buffer {
+            current: &raw,
+            source: &raw,
         };
-        let (_, actual) = Question::deserialize(&buffer, &mut global).unwrap();
+        let (_, actual) = Question::deserialize(&mut buffer).unwrap();
 
         let expected = Question::new("blog.toerktumlare.com", QType::A, QClass::IN);
         assert_eq!(expected, actual)
