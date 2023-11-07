@@ -8,8 +8,8 @@ use super::parse_utils::parse_name;
 use super::parse_utils::parse_qclass;
 use super::parse_utils::parse_qtype;
 use super::parse_utils::parse_rdlength;
-use super::parse_utils::parse_string;
 use super::parse_utils::parse_ttl;
+use super::parse_utils::take_token;
 use super::parse_utils::VResult;
 use super::Buffer;
 use super::{DeSerialize, QClass, QType};
@@ -127,7 +127,7 @@ fn parse_record<'a>(buffer: &'a [u8], source: &'a [u8]) -> VResult<&'a [u8], Rec
             (buffer, RData::CNAME(name))
         }
         QType::TXT => {
-            let (buffer, txt) = parse_string(buffer, rd_length.into())?;
+            let (buffer, txt) = take_token(buffer, rd_length.into())?;
             (buffer, RData::TXT(txt.to_owned()))
         }
         _ => unimplemented!(),

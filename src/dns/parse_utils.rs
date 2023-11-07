@@ -2,7 +2,7 @@ use nom::bytes::complete::take;
 use nom::combinator::map;
 use nom::error::Error;
 use nom::number::complete::{be_u16, be_u32, u8};
-use nom::{error::VerboseError, IResult};
+use nom::IResult;
 use std::net::Ipv4Addr;
 use std::str;
 use std::time::Duration;
@@ -11,8 +11,28 @@ use super::{QClass, QType};
 
 pub type VResult<I, O> = IResult<I, O, Error<I>>;
 
-pub fn parse_string(buffer: &[u8], length: usize) -> VResult<&[u8], &str> {
-    take_token(buffer, length)
+pub fn parse_names<'a>(
+    buffer: &'a [u8],
+    source: &'a [u8],
+    tokens: &mut Vec<String>,
+) -> VResult<&'a [u8], String> {
+    let mut b = buffer;
+    loop {
+        let next = b[0];
+        if is_ptr(next) {
+            let (buf, index) = ptr_value(b)?;
+            let (_, _) = parse_names(&source[index..], source, tokens)?;
+            b = buf;
+            break;
+        } else if next == 0x00 {
+            break;
+        }
+        let (buf, length) = u8::<&[u8], Error<&[u8]>>(b)?;
+        let (buf, token) = take_token(buf, length as usize)?;
+        tokens.push(token.to_owned());
+        b = buf;
+    }
+    Ok((&b, tokens.join(".")))
 }
 
 // deserializes names in DNSRecords, format is ascii chars prefixed by a length, and ending with a
@@ -76,6 +96,18 @@ pub fn parse_ttl(buffer: &[u8]) -> VResult<&[u8], Duration> {
     map(be_u32, |value| Duration::new(value.try_into().unwrap(), 0))(buffer)
 }
 
+pub fn is_ptr(byte: u8) -> bool {
+    byte >> 6 == 3
+}
+
+pub fn ptr_value(buffer: &[u8]) -> VResult<&[u8], usize> {
+    map(take(2usize), |v: &[u8]| {
+        let x = ((v[0] & 0b0011_1111) as usize) << 8;
+        let y = v[1] as usize;
+        x + y
+    })(buffer)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -102,5 +134,37 @@ mod tests {
 
         assert_eq!("blog.toerktumlare.com", &name);
         assert_eq!(0, buffer.len());
+    }
+
+    #[test]
+    fn is_pointer() {
+        let v = 0xC0;
+        assert!(is_ptr(v));
+    }
+
+    #[test]
+    fn is_not_pointer() {
+        let v = 0x3F;
+        assert!(!is_ptr(v));
+    }
+
+    #[test]
+    fn get_ptr_value() {
+        let buffer = vec![0xC1, 0x01];
+        let (_, actual) = ptr_value(&buffer).unwrap();
+        assert_eq!(257usize, actual)
+    }
+
+    #[test]
+    fn parse_string_with_pointers() {
+        let source = vec![
+            0x00, 0x00, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00,
+            0x00, 0x00, 0x03, 0x6e, 0x73, 0x31, 0xc0, 0x02,
+        ];
+        let buffer = vec![0x03, 0x6e, 0x73, 0x31, 0xc0, 0x02];
+
+        let mut v = Vec::new();
+        let (_, actual) = parse_names(&buffer, &source, &mut v).unwrap();
+        assert_eq!("ns1.google.com", actual)
     }
 }
