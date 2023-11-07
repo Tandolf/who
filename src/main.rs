@@ -30,8 +30,7 @@ async fn main() -> Result<()> {
         .await
         .context("could not bind")?;
 
-    // let m = Message::txt("toerktumlare.com");
-    let m = m.serialize().unwrap();
+    let m = m.serialize().context("Failed to serialize request")?;
 
     let mut buffer = [0; 1024];
     let _len = sock.send_to(&m, "1.1.1.1:53").await?;
@@ -42,7 +41,8 @@ async fn main() -> Result<()> {
         source: &buffer,
     };
 
-    let (_buffer, message) = Message::deserialize(&mut buffer).unwrap();
+    let (_buffer, message) =
+        Message::deserialize(&mut buffer).context("Failed to deserialize response")?;
 
     println!("{}", message);
     Ok(())

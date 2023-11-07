@@ -5,7 +5,7 @@ use nom::Finish;
 use crate::Buffer;
 
 use super::{
-    parse_utils::{parse_name, parse_qclass, parse_qtype},
+    parse_utils::{parse_name, parse_qclass, parse_qtype, VResult},
     DeSerialize, QClass, QType, Serialize,
 };
 
@@ -76,17 +76,26 @@ impl Serialize for Question {
     }
 }
 
+fn parse_question<'a>(buffer: &'a mut Buffer) -> VResult<&'a [u8], Question> {
+    let (buf, name) = parse_name(buffer.current)?;
+    let (buf, qtype) = parse_qtype(buf)?;
+    let (buf, qclass) = parse_qclass(buf)?;
+    buffer.current = buf;
+    Ok((buf, Question::new(name, qtype, qclass)))
+}
+
 impl<'a> DeSerialize<'a> for Question {
     type Item = (&'a mut Buffer<'a>, Question);
 
     fn deserialize(buffer: &'a mut Buffer<'a>) -> Result<Self::Item, anyhow::Error> {
-        let (buf, name) = parse_name(buffer.current).finish().unwrap();
-        let (buf, qtype) = parse_qtype(buf).finish().unwrap();
-        let (buf, qclass) = parse_qclass(buf).finish().unwrap();
+        let (_, question) = parse_question(buffer).finish().map_err(|e| {
+            anyhow::Error::msg(format!(
+                "Error at input: {:?}, with code: {:?}",
+                e.input, e.code
+            ))
+        })?;
 
-        buffer.current = buf;
-
-        Ok((buffer, Question::new(name, qtype, qclass)))
+        Ok((buffer, question))
     }
 }
 

@@ -1,6 +1,4 @@
-use nom::error::VerboseError;
 use nom::Finish;
-use nom::IResult;
 use std::fmt::Display;
 use std::net::Ipv4Addr;
 use std::time::Duration;
@@ -12,10 +10,9 @@ use super::parse_utils::parse_qtype;
 use super::parse_utils::parse_rdlength;
 use super::parse_utils::parse_string;
 use super::parse_utils::parse_ttl;
+use super::parse_utils::VResult;
 use super::Buffer;
 use super::{DeSerialize, QClass, QType};
-
-type VResult<I, O> = IResult<I, O, VerboseError<I>>;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -104,46 +101,40 @@ impl Record {
     }
 }
 
-fn parse_record<'a>(
-    buf: &'a mut Buffer<'a>,
-) -> Result<(&'a mut Buffer<'a>, Record), anyhow::Error> {
-    let buffer = buf.current;
-    let source = buf.source;
+fn parse_record<'a>(buffer: &'a [u8], source: &'a [u8]) -> VResult<&'a [u8], Record> {
     // If a pointer, then get the value from the cache
     let (buffer, name) = match buffer[0] {
         0xC0 => {
             let index = buffer[1] as usize;
-            let (_, name) = parse_name(&source[index..]).finish().unwrap();
+            let (_, name) = parse_name(&source[index..])?;
             (&buffer[2..], name)
         }
-        _ => parse_name(buffer).finish().unwrap(),
+        _ => parse_name(buffer)?,
     };
 
-    let (buffer, qtype) = parse_qtype(buffer).finish().unwrap();
-    let (buffer, qclass) = parse_qclass(buffer).finish().unwrap();
-    let (buffer, ttl) = parse_ttl(buffer).finish().unwrap();
-    let (buffer, rd_length) = parse_rdlength(buffer).finish().unwrap();
+    let (buffer, qtype) = parse_qtype(buffer)?;
+    let (buffer, qclass) = parse_qclass(buffer)?;
+    let (buffer, ttl) = parse_ttl(buffer)?;
+    let (buffer, rd_length) = parse_rdlength(buffer)?;
 
     let (buffer, rdata) = match qtype {
         QType::A => {
-            let (buffer, address) = parse_ipv4(buffer).finish().unwrap();
+            let (buffer, address) = parse_ipv4(buffer)?;
             (buffer, RData::A(address))
         }
         QType::CNAME => {
-            let (buffer, name) = parse_name(buffer).finish().unwrap();
+            let (buffer, name) = parse_name(buffer)?;
             (buffer, RData::CNAME(name))
         }
         QType::TXT => {
-            let (buffer, txt) = parse_string(buffer, rd_length.into()).finish().unwrap();
+            let (buffer, txt) = parse_string(buffer, rd_length.into())?;
             (buffer, RData::TXT(txt.to_owned()))
         }
         _ => unimplemented!(),
     };
 
-    buf.current = buffer;
-
     Ok((
-        buf,
+        buffer,
         Record::new(name.clone(), qtype, qclass, ttl, rd_length, rdata),
     ))
 }
@@ -152,7 +143,11 @@ impl<'a> DeSerialize<'a> for Record {
     type Item = (&'a mut Buffer<'a>, Record);
 
     fn deserialize(buffer: &'a mut Buffer<'a>) -> Result<Self::Item, anyhow::Error> {
-        let (buffer, record) = parse_record(buffer)?;
+        let (_, record) = parse_record(buffer.current, buffer.source)
+            .finish()
+            .map_err(|e| {
+                anyhow::Error::msg(format!("Error at: {:?}, with code: {:?}", e.input, e.code))
+            })?;
         Ok((buffer, record))
     }
 }

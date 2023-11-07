@@ -29,13 +29,13 @@ impl<'a> DeSerialize<'a> for Message {
     type Item = (&'a mut Buffer<'a>, Message);
 
     fn deserialize(buffer: &'a mut Buffer<'a>) -> Result<Self::Item, anyhow::Error> {
-        let (buffer, header) = Header::deserialize(buffer).unwrap();
-        let (buffer, question) = Question::deserialize(buffer).unwrap();
+        let (buffer, header) = Header::deserialize(buffer)?;
+        let (buffer, question) = Question::deserialize(buffer)?;
 
         let mut records = Vec::with_capacity(header.an_count as usize);
         let mut buf = buffer;
         for _ in 0..header.an_count {
-            let (buffer, record) = Record::deserialize(buf).unwrap();
+            let (buffer, record) = Record::deserialize(buf)?;
             records.push(record);
             buf = buffer;
         }

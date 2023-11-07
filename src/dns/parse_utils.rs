@@ -1,5 +1,6 @@
 use nom::bytes::complete::take;
 use nom::combinator::map;
+use nom::error::Error;
 use nom::number::complete::{be_u16, be_u32, u8};
 use nom::{error::VerboseError, IResult};
 use std::net::Ipv4Addr;
@@ -8,7 +9,7 @@ use std::time::Duration;
 
 use super::{QClass, QType};
 
-type VResult<I, O> = IResult<I, O, VerboseError<I>>;
+pub type VResult<I, O> = IResult<I, O, Error<I>>;
 
 pub fn parse_string(buffer: &[u8], length: usize) -> VResult<&[u8], &str> {
     take_token(buffer, length)
@@ -28,8 +29,8 @@ pub fn parse_name(buffer: &[u8]) -> VResult<&[u8], String> {
     let mut buffer = buffer;
     // Index used for caching if cache available
     while buffer[0] != 0x00 {
-        let (buf, length) = u8::<&[u8], VerboseError<&[u8]>>(buffer).unwrap();
-        let (buf, token) = take_token(buf, length as usize).unwrap();
+        let (buf, length) = u8::<&[u8], Error<&[u8]>>(buffer)?;
+        let (buf, token) = take_token(buf, length as usize)?;
         tokens.push(token.to_owned());
         buffer = buf;
     }

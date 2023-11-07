@@ -217,12 +217,14 @@ fn parse_rcode(i: BitInput) -> IResult<BitInput, ResponseCode> {
 
 impl<'a> DeSerialize<'a> for Header {
     type Item = (&'a mut Buffer<'a>, Header);
+
     fn deserialize(buffer: &'a mut Buffer<'a>) -> Result<Self::Item, anyhow::Error> {
-        let (buf, header) = bits::<&[u8], Header, Error<(&[u8], usize)>, Error<&[u8]>, _>(
-            parse_header,
-        )(buffer.current)
-        .finish()
-        .unwrap(); // Handle error better so that anyhow works;
+        let (buf, header) =
+            bits::<_, _, Error<(&[u8], usize)>, Error<&[u8]>, _>(parse_header)(buffer.current)
+                .finish()
+                .map_err(|e| {
+                    anyhow::Error::msg(format!("Error at: {:?}, with code: {:?}", e.input, e.code))
+                })?;
 
         buffer.current = buf;
         Ok((buffer, header))
