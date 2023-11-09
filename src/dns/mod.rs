@@ -2,6 +2,7 @@
 
 use std::fmt::{self, Display, Formatter};
 
+pub mod bit_parsers;
 pub mod header;
 pub mod message;
 pub mod parse_utils;

@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use nom::{bits, combinator::map, complete::take, error::Error, Finish, IResult};
+use nom::{bits, combinator::map, complete::take, error::Error, sequence::tuple, Finish, IResult};
 
 use super::{Buffer, DeSerialize, Serialize};
 
@@ -159,19 +159,24 @@ impl Serialize for Header {
 type BitInput<'a> = (&'a [u8], usize);
 
 fn parse_header(input: BitInput) -> IResult<BitInput, Header> {
-    let (input, id) = parse_u16(input)?;
-    let (input, qr) = parse_bool(input)?;
-    let (input, opcode) = parse_opcode(input)?;
-    let (input, aa) = parse_bool(input)?;
-    let (input, rc) = parse_bool(input)?;
-    let (input, rd) = parse_bool(input)?;
-    let (input, ra) = parse_bool(input)?;
-    let (input, _) = skip(input, 3)?;
-    let (input, r_code) = parse_rcode(input)?;
-    let (input, qd_count) = parse_u16(input)?;
-    let (input, an_count) = parse_u16(input)?;
-    let (input, ns_count) = parse_u16(input)?;
-    let (input, ar_count) = parse_u16(input)?;
+    let (
+        input,
+        (id, qr, opcode, aa, rc, rd, ra, _, r_code, qd_count, an_count, ns_count, ar_count),
+    ) = tuple((
+        parse_u16,
+        parse_bool,
+        parse_opcode,
+        parse_bool,
+        parse_bool,
+        parse_bool,
+        parse_bool,
+        skip3,
+        parse_rcode,
+        parse_u16,
+        parse_u16,
+        parse_u16,
+        parse_u16,
+    ))(input)?;
 
     Ok((
         input,
@@ -199,8 +204,8 @@ fn parse_opcode(i: BitInput) -> IResult<BitInput, Opcode> {
     })(i)
 }
 
-fn skip(i: BitInput, value: usize) -> IResult<BitInput, ()> {
-    map(take(value), |_bits: u8| ())(i)
+fn skip3(i: BitInput) -> IResult<BitInput, ()> {
+    map(take(3usize), |_bits: u8| ())(i)
 }
 
 fn parse_rcode(i: BitInput) -> IResult<BitInput, ResponseCode> {

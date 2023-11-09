@@ -1,10 +1,11 @@
+use nom::sequence::tuple;
 use nom::Finish;
 use std::fmt::Display;
 use std::net::Ipv4Addr;
 use std::time::Duration;
 
 use super::parse_utils::parse_ipv4;
-use super::parse_utils::parse_name;
+use super::parse_utils::parse_names;
 use super::parse_utils::parse_qclass;
 use super::parse_utils::parse_qtype;
 use super::parse_utils::parse_rdlength;
@@ -20,6 +21,16 @@ pub enum RData {
     A(Ipv4Addr),
     CNAME(String),
     TXT(String),
+}
+
+impl Display for RData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RData::A(value) => write!(f, "{}", value),
+            RData::CNAME(value) => write!(f, "{}", value),
+            RData::TXT(value) => write!(f, "{}", value),
+        }
+    }
 }
 
 // Resource record format
@@ -103,19 +114,20 @@ impl Record {
 
 fn parse_record<'a>(buffer: &'a [u8], source: &'a [u8]) -> VResult<&'a [u8], Record> {
     // If a pointer, then get the value from the cache
-    let (buffer, name) = match buffer[0] {
-        0xC0 => {
-            let index = buffer[1] as usize;
-            let (_, name) = parse_name(&source[index..])?;
-            (&buffer[2..], name)
-        }
-        _ => parse_name(buffer)?,
-    };
+    // let (buffer, name) = match buffer[0] {
+    //     0xC0 => {
+    //         let index = buffer[1] as usize;
+    //         let (_, name) = parse_name(&source[index..])?;
+    //         (&buffer[2..], name)
+    //     }
+    //     _ => parse_name(buffer)?,
+    // };
+    //
+    let mut t = Vec::new();
+    let (buffer, name) = parse_names(buffer, source, &mut t)?;
 
-    let (buffer, qtype) = parse_qtype(buffer)?;
-    let (buffer, qclass) = parse_qclass(buffer)?;
-    let (buffer, ttl) = parse_ttl(buffer)?;
-    let (buffer, rd_length) = parse_rdlength(buffer)?;
+    let (buffer, (qtype, qclass, ttl, rd_length)) =
+        tuple((parse_qtype, parse_qclass, parse_ttl, parse_rdlength))(buffer)?;
 
     let (buffer, rdata) = match qtype {
         QType::A => {
@@ -123,7 +135,8 @@ fn parse_record<'a>(buffer: &'a [u8], source: &'a [u8]) -> VResult<&'a [u8], Rec
             (buffer, RData::A(address))
         }
         QType::CNAME => {
-            let (buffer, name) = parse_name(buffer)?;
+            let mut t = Vec::new();
+            let (buffer, name) = parse_names(buffer, source, &mut t)?;
             (buffer, RData::CNAME(name))
         }
         QType::TXT => {
@@ -154,7 +167,15 @@ impl<'a> DeSerialize<'a> for Record {
 
 impl Display for Record {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, ";{}\t\t\t{}\t{}", self.name, self.qclass, self.qtype)
+        writeln!(
+            f,
+            ";{}\t\t\t{}\t{}\t{}\t{}",
+            self.name,
+            self.ttl.as_secs(),
+            self.qclass,
+            self.qtype,
+            self.rdata
+        )
     }
 }
 

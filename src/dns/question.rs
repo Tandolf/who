@@ -1,11 +1,11 @@
 use std::fmt::Display;
 
-use nom::Finish;
+use nom::{sequence::tuple, Finish};
 
 use crate::Buffer;
 
 use super::{
-    parse_utils::{parse_name, parse_qclass, parse_qtype, VResult},
+    parse_utils::{parse_names, parse_qclass, parse_qtype, VResult},
     DeSerialize, QClass, QType, Serialize,
 };
 
@@ -77,9 +77,9 @@ impl Serialize for Question {
 }
 
 fn parse_question<'a>(buffer: &'a mut Buffer) -> VResult<&'a [u8], Question> {
-    let (buf, name) = parse_name(buffer.current)?;
-    let (buf, qtype) = parse_qtype(buf)?;
-    let (buf, qclass) = parse_qclass(buf)?;
+    let mut tokens = Vec::new();
+    let (buf, name) = parse_names(buffer.current, buffer.source, &mut tokens)?;
+    let (buf, (qtype, qclass)) = tuple((parse_qtype, parse_qclass))(buf)?;
     buffer.current = buf;
     Ok((buf, Question::new(name, qtype, qclass)))
 }

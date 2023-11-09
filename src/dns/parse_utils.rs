@@ -1,15 +1,64 @@
+use nom::branch::alt;
 use nom::bytes::complete::take;
 use nom::combinator::map;
-use nom::error::Error;
+use nom::error::{Error, ErrorKind, ParseError};
 use nom::number::complete::{be_u16, be_u32, u8};
 use nom::IResult;
+use nom::{bits, Err};
 use std::net::Ipv4Addr;
 use std::str;
 use std::time::Duration;
 
+use super::bit_parsers::parse_ptr;
 use super::{QClass, QType};
 
 pub type VResult<I, O> = IResult<I, O, Error<I>>;
+
+pub enum CtrlByte {
+    Length(u8),
+    Ptr(u16),
+    Null,
+}
+
+fn parse_nullbyte(buffer: &[u8]) -> IResult<&[u8], CtrlByte> {
+    if buffer[0] == 0x00 {
+        map(take(1usize), |_: &[u8]| CtrlByte::Null)(buffer)
+    } else {
+        Err(Err::Error(Error::from_error_kind(buffer, ErrorKind::Eof)))
+    }
+}
+
+fn parse_length_byte(buffer: &[u8]) -> IResult<&[u8], CtrlByte> {
+    map(take(1usize), |value: &[u8]| CtrlByte::Length(value[0]))(buffer)
+}
+
+fn resolve_next(buffer: &[u8]) -> IResult<&[u8], CtrlByte> {
+    alt((bits(parse_ptr), parse_nullbyte, parse_length_byte))(buffer)
+}
+
+// pub fn parse_names<'a>(
+//     buffer: &'a [u8],
+//     source: &'a [u8],
+//     tokens: &mut Vec<String>,
+// ) -> VResult<&'a [u8], String> {
+//     let mut b = buffer;
+//     loop {
+//         let next = b[0];
+//         if is_ptr(next) {
+//             let (buf, index) = ptr_value(b)?;
+//             let (_, _) = parse_names(&source[index..], source, tokens)?;
+//             b = buf;
+//             break;
+//         } else if next == 0x00 {
+//             break;
+//         }
+//         let (buf, length) = u8::<&[u8], Error<&[u8]>>(b)?;
+//         let (buf, token) = take_token(buf, length as usize)?;
+//         tokens.push(token.to_owned());
+//         b = buf;
+//     }
+//     Ok((&b, tokens.join(".")))
+// }
 
 pub fn parse_names<'a>(
     buffer: &'a [u8],
@@ -18,23 +67,27 @@ pub fn parse_names<'a>(
 ) -> VResult<&'a [u8], String> {
     let mut b = buffer;
     loop {
-        let next = b[0];
-        if is_ptr(next) {
-            let (buf, index) = ptr_value(b)?;
-            let (_, _) = parse_names(&source[index..], source, tokens)?;
-            b = buf;
-            break;
-        } else if next == 0x00 {
-            break;
+        if let Ok((buffer, ctrl_byte)) = resolve_next(b) {
+            match ctrl_byte {
+                CtrlByte::Length(length) => {
+                    let (buffer, token) = take_token(buffer, length as usize)?;
+                    tokens.push(token.to_owned());
+                    b = buffer;
+                }
+                CtrlByte::Ptr(index) => {
+                    let (_, _) = parse_names(&source[index as usize..], source, tokens)?;
+                    b = buffer;
+                    break;
+                }
+                CtrlByte::Null => {
+                    b = buffer;
+                    break;
+                }
+            }
         }
-        let (buf, length) = u8::<&[u8], Error<&[u8]>>(b)?;
-        let (buf, token) = take_token(buf, length as usize)?;
-        tokens.push(token.to_owned());
-        b = buf;
     }
     Ok((&b, tokens.join(".")))
 }
-
 // deserializes names in DNSRecords, format is ascii chars prefixed by a length, and ending with a
 // null termination. Example:
 //
@@ -157,6 +210,19 @@ mod tests {
 
     #[test]
     fn parse_string_with_pointers() {
+        let source = vec![
+            0x00, 0x00, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00,
+            0x00, 0x00, 0x03, 0x6e, 0x73, 0x31, 0xc0, 0x02,
+        ];
+        let buffer = vec![0x03, 0x6e, 0x73, 0x31, 0xc0, 0x02];
+
+        let mut v = Vec::new();
+        let (_, actual) = parse_names(&buffer, &source, &mut v).unwrap();
+        assert_eq!("ns1.google.com", actual)
+    }
+
+    #[test]
+    fn parse_string_with_two_pointers() {
         let source = vec![
             0x00, 0x00, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00,
             0x00, 0x00, 0x03, 0x6e, 0x73, 0x31, 0xc0, 0x02,
