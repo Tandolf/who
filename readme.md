@@ -13,11 +13,11 @@ Output
 ;blog.toerktumlare.com			IN	A
 
 ;; ========= Records =========
-;blog.toerktumlare.com			IN	CNAME
-;tandolf.github.io			    IN	A
-;tandolf.github.io			    IN	A
-;tandolf.github.io			    IN	A
-;tandolf.github.io			    IN	A
+;blog.toerktumlare.com			1476	IN	CNAME	tandolf.github.io
+;tandolf.github.io			1476	IN	A	185.199.109.153
+;tandolf.github.io			1476	IN	A	185.199.111.153
+;tandolf.github.io			1476	IN	A	185.199.110.153
+;tandolf.github.io			1476	IN	A	185.199.108.153
 ```
 
 ### Current supported record types
