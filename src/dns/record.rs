@@ -156,11 +156,12 @@ impl<'a> DeSerialize<'a> for Record {
     type Item = (&'a mut Buffer<'a>, Record);
 
     fn deserialize(buffer: &'a mut Buffer<'a>) -> Result<Self::Item, anyhow::Error> {
-        let (_, record) = parse_record(buffer.current, buffer.source)
+        let (buf, record) = parse_record(buffer.current, buffer.source)
             .finish()
             .map_err(|e| {
                 anyhow::Error::msg(format!("Error at: {:?}, with code: {:?}", e.input, e.code))
             })?;
+        buffer.current = buf;
         Ok((buffer, record))
     }
 }
