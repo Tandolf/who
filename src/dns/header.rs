@@ -99,9 +99,9 @@ impl Header {
     }
 
     // Default header when making a plain request
-    pub(crate) fn request() -> Header {
+    pub(crate) fn request(id: u16) -> Header {
         Header::new(
-            0x0002,
+            id,
             false,
             Opcode::Query,
             false,

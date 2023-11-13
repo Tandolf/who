@@ -2,6 +2,7 @@
 use std::fmt::Display;
 
 use anyhow::{Context, Ok};
+use rand::random;
 
 use super::{
     header::Header, question::Question, record::Record, Buffer, DeSerialize, QClass, QType,
@@ -53,16 +54,18 @@ impl<'a> DeSerialize<'a> for Message {
 
 impl Message {
     pub fn single(name: impl Into<String>) -> Message {
+        let id = random::<u16>();
         Self {
-            header: Header::request(),
+            header: Header::request(id),
             question: Question::new(name, QType::A, QClass::IN),
             records: Vec::with_capacity(0),
         }
     }
 
     pub fn txt(name: impl Into<String>) -> Message {
+        let id = random::<u16>();
         Self {
-            header: Header::request(),
+            header: Header::request(id),
             question: Question::new(name, QType::TXT, QClass::IN),
             records: Vec::with_capacity(0),
         }
