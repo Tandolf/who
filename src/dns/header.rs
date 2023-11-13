@@ -240,7 +240,7 @@ impl Display for Header {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            ";; OPCODE: {}, STATUS: {} id: {}\n;; {}, {}, {},\n;; QUERY: {}, ANSWERS: {}, AUTHORITY: {}, ADDITIONAL: {}\n",
+            "OPCODE: {}, STATUS: {} id: {}\n{}, {}, {},\nQUERY: {}, ANSWERS: {}, AUTHORITY: {}, ADDITIONAL: {}\n",
             self.opcode, self.r_code, self.id, if self.qr { "qr"} else {""}, if self.rd {"rd"} else {""}, if self.ra {"ra"} else {""}, self.qd_count, self.an_count, self.ns_count, self.ar_count
         )
     }

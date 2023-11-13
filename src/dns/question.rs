@@ -11,9 +11,9 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Question {
-    qname: String,
-    qtype: QType,
-    qclass: QClass,
+    pub qname: String,
+    pub qtype: QType,
+    pub qclass: QClass,
 }
 
 impl Question {

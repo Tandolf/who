@@ -63,33 +63,33 @@ impl Display for RData {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Record {
     // a domain name to which this resource record pertains.
-    name: String,
+    pub name: String,
 
     // two octets containing one of the RR type codes.
     // This field specifies the meaning of the data in the RDATA field.
-    qtype: QType,
+    pub qtype: QType,
 
     // two octets which specify the class of the data in the
     // RDATA field.
-    qclass: QClass,
+    pub qclass: QClass,
 
     // a 32 bit unsigned integer that specifies the time
     // interval (in seconds) that the resource record may be
     // cached before it should be discarded.  Zero values are
     // interpreted to mean that the RR can only be used for the
     // transaction in progress, and should not be cached.
-    ttl: Duration,
+    pub ttl: Duration,
 
     // an unsigned 16 bit integer that specifies the length in
     // octets of the RDATA field.
-    rd_length: u16,
+    pub rd_length: u16,
 
     // a variable length string of octets that describes the
     // resource.  The format of this information varies
     // according to the TYPE and CLASS of the resource record.
     // For example, the if the TYPE is A and the CLASS is IN,
     // the RDATA field is a 4 octet ARPA Internet address.
-    rdata: RData,
+    pub rdata: RData,
 }
 
 impl Record {

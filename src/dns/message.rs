@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-use std::fmt::Display;
 
 use anyhow::{Context, Ok};
 use rand::random;
@@ -69,20 +68,6 @@ impl Message {
             question: Question::new(name, QType::TXT, QClass::IN),
             records: Vec::with_capacity(0),
         }
-    }
-}
-
-impl Display for Message {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, ";; ========= HEADER ==========").unwrap();
-        writeln!(f, "{}", self.header).unwrap();
-        writeln!(f, ";; ======== Question =========").unwrap();
-        writeln!(f, ";{}", self.question).unwrap();
-        writeln!(f, ";; ========= Records =========").unwrap();
-        for r in self.records.iter() {
-            write!(f, "{}", r).unwrap();
-        }
-        std::fmt::Result::Ok(())
     }
 }
 
