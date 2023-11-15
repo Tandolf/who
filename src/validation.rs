@@ -1,5 +1,4 @@
-pub fn check_length(value: impl Into<String>) -> bool {
-    let value = value.into();
+pub fn check_length(value: &String) -> bool {
     value.chars().count() <= 255
 }
 
@@ -28,7 +27,7 @@ mod tests {
             .map(char::from)
             .collect();
 
-        assert!(!check_length(v))
+        assert!(!check_length(&v))
     }
 
     #[test]
@@ -39,7 +38,7 @@ mod tests {
             .map(char::from)
             .collect();
 
-        assert!(check_length(v))
+        assert!(check_length(&v))
     }
 
     #[test]

@@ -3,11 +3,12 @@ use std::{
     process,
 };
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use dns::{message::Message, DeSerialize, Serialize};
 use tokio::net::UdpSocket;
+use validation::{check_length, check_token_length};
 
 use crate::dns::Buffer;
 use ratatui::{prelude::*, widgets::*};
@@ -29,7 +30,13 @@ async fn main() -> Result<()> {
         process::exit(1);
     }
 
-    // Implement validation, address max 255 ascii chars. And each part can be maximum 63.
+    let _ = match validate(&args.address) {
+        Ok(address) => address,
+        Err(msg) => {
+            eprintln!("{}", msg);
+            process::exit(1);
+        }
+    };
 
     let sock = UdpSocket::bind("0.0.0.0:8080")
         .await
@@ -56,6 +63,25 @@ async fn main() -> Result<()> {
     let _ = terminal.show_cursor().context("unable to show cursor");
 
     Ok(())
+}
+
+fn validate(address: &String) -> Result<&str> {
+    let length_result = check_length(address);
+    if !length_result {
+        return Err(anyhow!(format!(
+            "Address: {}, exceededs maximum length of 255",
+            &address
+        )));
+    }
+    let (value, result) = check_token_length(address);
+    if !result {
+        return Err(anyhow!(format!(
+            "Token: {}, exceededs maximum length of 63",
+            value
+        )));
+    }
+
+    Ok(value)
 }
 
 fn setup_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>> {
