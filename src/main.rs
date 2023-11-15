@@ -94,35 +94,47 @@ fn render_app(frame: &mut Frame, message: &Message) {
     // Question
     let row = Row::new(vec![
         Cell::from(message.question.qname.clone()),
-        Cell::from(message.question.qtype.to_string()),
+        Cell::from(""),
         Cell::from(message.question.qclass.to_string()),
+        Cell::from(message.question.qtype.to_string()),
     ]);
 
     let t = Table::new(vec![row])
         .block(Block::new().title("Message").borders(Borders::ALL))
         .widths(&[
-            Constraint::Ratio(1, 3),
-            Constraint::Ratio(1, 3),
-            Constraint::Ratio(1, 3),
+            Constraint::Percentage(35),
+            Constraint::Percentage(10),
+            Constraint::Percentage(10),
+            Constraint::Percentage(10),
         ]);
 
     frame.render_widget(t, inner[1]);
 
     // Records
     let record_rows = message.records.iter().map(|r| {
+        let string_data = match &r.rdata {
+            dns::record::RData::A(ip) => ip.to_string(),
+            dns::record::RData::CNAME(cname) => cname.to_string(),
+            dns::record::RData::TXT(txt) => txt.to_string(),
+        };
+
         Row::new(vec![
             Cell::from(r.name.clone()),
-            Cell::from(r.qtype.to_string()),
+            Cell::from(r.ttl.as_secs().to_string()),
             Cell::from(r.qclass.to_string()),
+            Cell::from(r.qtype.to_string()),
+            Cell::from(string_data),
         ])
     });
 
     let record_table = Table::new(record_rows)
         .block(Block::new().title("Records").borders(Borders::ALL))
         .widths(&[
-            Constraint::Ratio(1, 3),
-            Constraint::Ratio(1, 3),
-            Constraint::Ratio(1, 3),
+            Constraint::Percentage(35),
+            Constraint::Percentage(10),
+            Constraint::Percentage(10),
+            Constraint::Percentage(10),
+            Constraint::Percentage(35),
         ]);
     frame.render_widget(record_table, inner[2]);
 }
