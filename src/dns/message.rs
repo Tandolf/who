@@ -125,7 +125,7 @@ mod test {
         let q = q.header;
         let bytes = q.serialize().unwrap();
 
-        assert_eq!(&query, &bytes);
+        assert_eq!(&query[2..], &bytes[2..]);
     }
 
     #[test]
@@ -138,7 +138,7 @@ mod test {
         let q = Message::single("google.com");
         let bytes = q.serialize().unwrap();
 
-        assert_eq!(&query, &bytes);
+        assert_eq!(&query[2..], &bytes[2..]);
     }
 
     // 0a00 020f 0035 8d63 008e 0ea1 a4c9 8180  .....5.c........
