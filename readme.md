@@ -5,7 +5,7 @@ This is a dns client written in rust in order to understand the dns protocol bet
 Output
 ```
 ┌Header──────────────────────────────────────────────────────────────────┐
-│OPCODE: Query, STATUS: NoError id: 27995                                │
+│OPCODE: Query, STATUS: NoError id: 32419                                │
 │qr, rd, ra,                                                             │
 │QUERY: 1, ANSWERS: 5, AUTHORITY: 0, ADDITIONAL: 0                       │
 └────────────────────────────────────────────────────────────────────────┘
@@ -13,11 +13,17 @@ Output
 │blog.toerktumlare.com             IN       A                            │
 └────────────────────────────────────────────────────────────────────────┘
 ┌Records─────────────────────────────────────────────────────────────────┐
-│blog.toerktumlare.com     3469    IN       CNAME   tandolf.github.io    │
-│tandolf.github.io         3469    IN       A       185.199.108.153      │
-│tandolf.github.io         3469    IN       A       185.199.110.153      │
-│tandolf.github.io         3469    IN       A       185.199.111.153      │
-│tandolf.github.io         3469    IN       A       185.199.109.153      │
+│blog.toerktumlare.com     2792    IN       CNAME   tandolf.github.io    │
+│tandolf.github.io         2792    IN       A       185.199.110.153      │
+│tandolf.github.io         2792    IN       A       185.199.108.153      │
+│tandolf.github.io         2792    IN       A       185.199.111.153      │
+│tandolf.github.io         2792    IN       A       185.199.109.153      │
+└────────────────────────────────────────────────────────────────────────┘
+┌Statistics──────────────────────────────────────────────────────────────┐
+│Query time: 4 msec                                                      │
+│When: 2023-11-15 18:11:43                                               │
+│Msg SENT: 39 bytes                                                      │
+│Msg RCVD: 134 bytes                                                     │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -28,8 +34,9 @@ Output
 
 TODO:
 - [x] add ttl and rdata to records
-- [ ] implement input validation.
-- [ ] statistics section at the bottom
+- [x] implement input validation.
+- [x] statistics section at the bottom
+- [ ] dynamically update size of gui blocks in accordance to data recvd
 - [ ] add txt and cname flag to do such requests.
 - [ ] fancier formatting in the header section
 - [ ] print raw output `--raw`

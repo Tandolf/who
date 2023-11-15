@@ -1,7 +1,10 @@
 use std::{
     io::{self, Stdout},
     process,
+    time::{Duration, Instant},
 };
+
+use chrono::{DateTime, Local};
 
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
@@ -14,6 +17,13 @@ use crate::dns::Buffer;
 use ratatui::{prelude::*, widgets::*};
 mod dns;
 mod validation;
+
+struct Statistics {
+    pub query_time: Duration,
+    pub msg_sent: usize,
+    pub msg_rcvd: usize,
+    pub current_time: DateTime<Local>,
+}
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -46,8 +56,10 @@ async fn main() -> Result<()> {
     let m = m.serialize().context("Failed to serialize request")?;
 
     let mut buffer = [0; 1024];
+    let start = Instant::now();
     let _len = sock.send_to(&m, "1.1.1.1:53").await?;
-    let (_, _) = sock.recv_from(&mut buffer).await?;
+    let (msg_length, _) = sock.recv_from(&mut buffer).await?;
+    let elapsed = start.elapsed();
 
     let mut buffer = Buffer {
         current: &buffer,
@@ -57,8 +69,14 @@ async fn main() -> Result<()> {
     let (_buffer, message) =
         Message::deserialize(&mut buffer).context("Failed to deserialize response")?;
 
+    let stats = Statistics {
+        query_time: elapsed,
+        msg_sent: m.len(),
+        msg_rcvd: msg_length,
+        current_time: Local::now(),
+    };
     let mut terminal = setup_terminal().context("setup failed")?;
-    terminal.draw(|f| render_app(f, &message))?;
+    terminal.draw(|f| render_app(f, &message, &stats))?;
     disable_raw_mode().context("failed to disable raw mode")?;
     let _ = terminal.show_cursor().context("unable to show cursor");
 
@@ -90,13 +108,13 @@ fn setup_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>> {
     let terminal = Terminal::with_options(
         CrosstermBackend::new(stdout),
         TerminalOptions {
-            viewport: Viewport::Inline(15),
+            viewport: Viewport::Inline(22),
         },
     )?;
     Ok(terminal)
 }
 
-fn render_app(frame: &mut Frame, message: &Message) {
+fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
     let message = &message;
     let outer = Layout::default()
         .direction(Direction::Horizontal)
@@ -106,16 +124,30 @@ fn render_app(frame: &mut Frame, message: &Message) {
     let inner = Layout::default()
         .direction(Direction::Vertical)
         .constraints(vec![
-            Constraint::Percentage(30),
-            Constraint::Percentage(20),
-            Constraint::Percentage(50),
+            Constraint::Length(1),
+            Constraint::Length(5),
+            Constraint::Length(3),
+            Constraint::Length(7),
+            Constraint::Length(6),
         ])
         .split(outer[0]);
+
+    let program_info = Line::from(vec![
+        "== Who are you? ==".into(),
+        " ".into(),
+        "v1.0.0".into(),
+        " == ".into(),
+        message.question.qname.clone().into(),
+        " == ".into(),
+    ]);
+
+    frame.render_widget(Paragraph::new(program_info), inner[0]);
+
     // Header
     frame.render_widget(
         Paragraph::new(format!("{}", message.header))
             .block(Block::new().title("Header").borders(Borders::ALL)),
-        inner[0],
+        inner[1],
     );
 
     // Question
@@ -135,7 +167,7 @@ fn render_app(frame: &mut Frame, message: &Message) {
             Constraint::Percentage(10),
         ]);
 
-    frame.render_widget(t, inner[1]);
+    frame.render_widget(t, inner[2]);
 
     // Records
     let record_rows = message.records.iter().map(|r| {
@@ -163,5 +195,43 @@ fn render_app(frame: &mut Frame, message: &Message) {
             Constraint::Percentage(10),
             Constraint::Percentage(35),
         ]);
-    frame.render_widget(record_table, inner[2]);
+    frame.render_widget(record_table, inner[3]);
+
+    let query_time = Line::from(vec![
+        "Query time:".into(),
+        " ".into(),
+        stats.query_time.as_millis().to_string().into(),
+        " ".into(),
+        "msec".into(),
+    ]);
+
+    let current_time = Line::from(vec![
+        "When:".into(),
+        " ".into(),
+        stats
+            .current_time
+            .format("%Y-%m-%d %H:%M:%S")
+            .to_string()
+            .into(),
+    ]);
+
+    let message_sent = Line::from(vec![
+        "Msg SENT:".into(),
+        " ".into(),
+        stats.msg_sent.to_string().into(),
+        " ".into(),
+        "bytes".into(),
+    ]);
+
+    let message_rcvd = Line::from(vec![
+        "Msg RCVD:".into(),
+        " ".into(),
+        stats.msg_rcvd.to_string().into(),
+        " ".into(),
+        "bytes".into(),
+    ]);
+
+    let t = Paragraph::new(vec![query_time, current_time, message_sent, message_rcvd])
+        .block(Block::new().title("Statistics").borders(Borders::ALL));
+    frame.render_widget(t, inner[4]);
 }
