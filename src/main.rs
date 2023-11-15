@@ -12,6 +12,7 @@ use tokio::net::UdpSocket;
 use crate::dns::Buffer;
 use ratatui::{prelude::*, widgets::*};
 mod dns;
+mod validation;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
