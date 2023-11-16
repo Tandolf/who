@@ -18,6 +18,12 @@ use ratatui::{prelude::*, widgets::*};
 mod dns;
 mod validation;
 
+const TOP_BLOCK_SIZE: u16 = 1;
+const HEADER_BLOCK_SIZE: u16 = 5;
+const QUESTION_BLOCK_SIZE: u16 = 2;
+const MESSAGE_BLOCK_SIZE: u16 = 2;
+const STAT_BLOCK_SIZE: u16 = 6;
+
 struct Statistics {
     pub query_time: Duration,
     pub msg_sent: usize,
@@ -75,7 +81,8 @@ async fn main() -> Result<()> {
         msg_rcvd: msg_length,
         current_time: Local::now(),
     };
-    let mut terminal = setup_terminal().context("setup failed")?;
+    let mut terminal =
+        setup_terminal(message.header.qd_count, message.header.an_count).context("setup failed")?;
     terminal.draw(|f| render_app(f, &message, &stats))?;
     disable_raw_mode().context("failed to disable raw mode")?;
     let _ = terminal.show_cursor().context("unable to show cursor");
@@ -102,20 +109,29 @@ fn validate(address: &String) -> Result<&str> {
     Ok(value)
 }
 
-fn setup_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>> {
+fn setup_terminal(qd_count: u16, an_count: u16) -> Result<Terminal<CrosstermBackend<Stdout>>> {
+    let viewport_size = TOP_BLOCK_SIZE
+        + HEADER_BLOCK_SIZE
+        + QUESTION_BLOCK_SIZE
+        + qd_count
+        + MESSAGE_BLOCK_SIZE
+        + an_count
+        + STAT_BLOCK_SIZE;
+
+    dbg!(viewport_size);
+
     let stdout = io::stdout();
     enable_raw_mode().context("failed to enable raw mode")?;
     let terminal = Terminal::with_options(
         CrosstermBackend::new(stdout),
         TerminalOptions {
-            viewport: Viewport::Inline(22),
+            viewport: Viewport::Inline(viewport_size),
         },
     )?;
     Ok(terminal)
 }
 
 fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
-    let message = &message;
     let outer = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(vec![Constraint::Percentage(70), Constraint::Percentage(30)])
@@ -124,11 +140,11 @@ fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
     let inner = Layout::default()
         .direction(Direction::Vertical)
         .constraints(vec![
-            Constraint::Length(1),
-            Constraint::Length(5),
-            Constraint::Length(3),
-            Constraint::Length(7),
-            Constraint::Length(6),
+            Constraint::Length(TOP_BLOCK_SIZE),
+            Constraint::Length(HEADER_BLOCK_SIZE),
+            Constraint::Length(QUESTION_BLOCK_SIZE + message.header.qd_count),
+            Constraint::Length(MESSAGE_BLOCK_SIZE + message.header.an_count),
+            Constraint::Length(STAT_BLOCK_SIZE),
         ])
         .split(outer[0]);
 

@@ -36,7 +36,7 @@ TODO:
 - [x] add ttl and rdata to records
 - [x] implement input validation.
 - [x] statistics section at the bottom
-- [ ] dynamically update size of gui blocks in accordance to data recvd
+- [x] dynamically update size of gui blocks in accordance to data recvd
 - [ ] add txt and cname flag to do such requests.
 - [ ] fancier formatting in the header section
 - [ ] print raw output `--raw`
