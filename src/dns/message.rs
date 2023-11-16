@@ -52,31 +52,29 @@ impl<'a> DeSerialize<'a> for Message {
 }
 
 impl Message {
-    pub fn a(name: impl Into<String>) -> Message {
+    pub(crate) fn new(name: impl Into<String>, qtype: QType) -> Message {
         let id = random::<u16>();
         Self {
             header: Header::request(id),
-            question: Question::new(name, QType::A, QClass::IN),
+            question: Question::new(name, qtype, QClass::IN),
             records: Vec::with_capacity(0),
         }
+    }
+
+    pub fn a(name: impl Into<String>) -> Message {
+        Message::new(name, QType::A)
     }
 
     pub fn aaaa(name: impl Into<String>) -> Message {
-        let id = random::<u16>();
-        Self {
-            header: Header::request(id),
-            question: Question::new(name, QType::AAAA, QClass::IN),
-            records: Vec::with_capacity(0),
-        }
+        Message::new(name, QType::AAAA)
+    }
+
+    pub fn ns(name: impl Into<String>) -> Message {
+        Message::new(name, QType::NS)
     }
 
     pub fn txt(name: impl Into<String>) -> Message {
-        let id = random::<u16>();
-        Self {
-            header: Header::request(id),
-            question: Question::new(name, QType::TXT, QClass::IN),
-            records: Vec::with_capacity(0),
-        }
+        Message::new(name, QType::TXT)
     }
 
     pub fn cname(name: impl Into<String>) -> Message {

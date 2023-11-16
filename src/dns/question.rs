@@ -40,9 +40,9 @@ impl Serialize for Question {
         body.push(0);
         let qtype = match self.qtype {
             QType::A => QType::A as u8,
-            QType::NS => todo!(),
-            QType::MD => todo!(),
-            QType::MF => todo!(),
+            QType::NS => QType::NS as u8,
+            QType::MD => unimplemented!("Obsolete, use MX command instead"),
+            QType::MF => unimplemented!("Obsolete, use MX command instead"),
             QType::CNAME => QType::CNAME as u8,
             QType::SOA => todo!(),
             QType::MB => todo!(),

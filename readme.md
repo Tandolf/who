@@ -3,7 +3,9 @@
 This is a dns client written in rust in order to understand the dns protocol better.
 
 Output
-```
+```bash
+$ who blog.toerktumlare.com
+== Who are you? == v1.0.0 == blog.toerktumlare.com ==
 ┌Header──────────────────────────────────────────────────────────────────┐
 │OPCODE: Query, STATUS: NoError id: 32419                                │
 │qr, rd, ra,                                                             │
@@ -32,6 +34,7 @@ Output
 - CNAME
 - TXT
 - AAAA (ipv6, [rfc 3596](https://datatracker.ietf.org/doc/html/rfc3596))
+- NS
 
 TODO:
 - [ ] fancier formatting in the header section
@@ -39,8 +42,8 @@ TODO:
 - [ ] Fix help menu so it looks good
 - [x] implement ipv6 dns record types `rfc 3596` 
 - [x] print raw output `--raw`
+- [x] add txt and cname flag to do such requests.
+- [x] dynamically update size of gui blocks in accordance to data recvd
 - [x] add ttl and rdata to records
 - [x] implement input validation.
 - [x] statistics section at the bottom
-- [x] dynamically update size of gui blocks in accordance to data recvd
-- [x] add txt and cname flag to do such requests.

@@ -24,6 +24,7 @@ pub enum RData {
     CNAME(String),
     TXT(String),
     AAAA(Ipv6Addr),
+    NS(String),
 }
 
 impl Display for RData {
@@ -33,6 +34,7 @@ impl Display for RData {
             RData::CNAME(value) => write!(f, "{}", value),
             RData::TXT(value) => write!(f, "{}", value),
             RData::AAAA(value) => write!(f, "{}", value),
+            RData::NS(value) => write!(f, "{}", value),
         }
     }
 }
@@ -140,6 +142,10 @@ fn parse_record<'a>(buffer: &'a [u8], source: &'a [u8]) -> VResult<&'a [u8], Rec
         QType::AAAA => {
             let (buffer, address) = parse_ipv6(buffer)?;
             (buffer, RData::AAAA(address))
+        }
+        QType::NS => {
+            let (buffer, name) = parse_names(buffer, source, &mut t)?;
+            (buffer, RData::NS(name))
         }
         _ => unimplemented!(),
     };

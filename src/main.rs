@@ -37,6 +37,7 @@ pub enum Commands {
     Cname { address: String },
     A { address: String },
     AAAA { address: String },
+    NS { address: String },
 }
 
 #[derive(Parser)]
@@ -60,6 +61,7 @@ async fn main() -> Result<()> {
         Some(Commands::Cname { address }) => Message::cname(valid(address)),
         Some(Commands::A { address }) => Message::a(valid(address)),
         Some(Commands::AAAA { address }) => Message::aaaa(valid(address)),
+        Some(Commands::NS { address }) => Message::ns(valid(address)),
         None => {
             if let Some(address) = &cli.address {
                 Message::a(valid(address))
@@ -206,7 +208,7 @@ fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
     let t = Table::new(vec![row])
         .block(Block::new().title("Message").borders(Borders::ALL))
         .widths(&[
-            Constraint::Percentage(35),
+            Constraint::Percentage(25),
             Constraint::Percentage(10),
             Constraint::Percentage(10),
             Constraint::Percentage(10),
@@ -221,6 +223,7 @@ fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
             dns::record::RData::CNAME(cname) => cname.to_string(),
             dns::record::RData::TXT(txt) => txt.to_string(),
             dns::record::RData::AAAA(ip) => ip.to_string(),
+            dns::record::RData::NS(ns) => ns.to_string(),
         };
 
         Row::new(vec![
@@ -235,11 +238,11 @@ fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
     let record_table = Table::new(record_rows)
         .block(Block::new().title("Records").borders(Borders::ALL))
         .widths(&[
-            Constraint::Percentage(35),
+            Constraint::Percentage(25),
             Constraint::Percentage(10),
             Constraint::Percentage(10),
             Constraint::Percentage(10),
-            Constraint::Percentage(35),
+            Constraint::Percentage(45),
         ]);
     frame.render_widget(record_table, inner[3]);
 
