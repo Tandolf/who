@@ -43,7 +43,7 @@ impl Serialize for Question {
             QType::NS => todo!(),
             QType::MD => todo!(),
             QType::MF => todo!(),
-            QType::CNAME => todo!(),
+            QType::CNAME => QType::CNAME as u8,
             QType::SOA => todo!(),
             QType::MB => todo!(),
             QType::MG => todo!(),

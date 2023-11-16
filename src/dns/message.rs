@@ -52,7 +52,7 @@ impl<'a> DeSerialize<'a> for Message {
 }
 
 impl Message {
-    pub fn single(name: impl Into<String>) -> Message {
+    pub fn a(name: impl Into<String>) -> Message {
         let id = random::<u16>();
         Self {
             header: Header::request(id),
@@ -66,6 +66,15 @@ impl Message {
         Self {
             header: Header::request(id),
             question: Question::new(name, QType::TXT, QClass::IN),
+            records: Vec::with_capacity(0),
+        }
+    }
+
+    pub fn cname(name: impl Into<String>) -> Message {
+        let id = random::<u16>();
+        Self {
+            header: Header::request(id),
+            question: Question::new(name, QType::CNAME, QClass::IN),
             records: Vec::with_capacity(0),
         }
     }
@@ -121,7 +130,7 @@ mod test {
             0x00, 0x02, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
         ];
 
-        let q = Message::single("foobar");
+        let q = Message::a("foobar");
         let q = q.header;
         let bytes = q.serialize().unwrap();
 
@@ -135,7 +144,7 @@ mod test {
             0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01,
         ];
 
-        let q = Message::single("google.com");
+        let q = Message::a("google.com");
         let bytes = q.serialize().unwrap();
 
         assert_eq!(&query[2..], &bytes[2..]);

@@ -7,7 +7,7 @@ use std::{
 use chrono::{DateTime, Local};
 
 use anyhow::{anyhow, Context, Result};
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use dns::{message::Message, DeSerialize, Serialize};
 use tokio::net::UdpSocket;
@@ -31,26 +31,37 @@ struct Statistics {
     pub current_time: DateTime<Local>,
 }
 
+#[derive(Subcommand)]
+pub enum Commands {
+    Txt { address: String },
+    Cname { address: String },
+    A { address: String },
+}
+
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-struct Args {
-    address: String,
+struct Cli {
+    address: Option<String>,
+
+    #[command(subcommand)]
+    command: Option<Commands>,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let args = Args::parse();
+    let cli = Cli::parse();
 
-    if args.address.is_empty() {
-        eprintln!("please provide a valid address");
-        process::exit(1);
-    }
-
-    let _ = match validate(&args.address) {
-        Ok(address) => address,
-        Err(msg) => {
-            eprintln!("{}", msg);
-            process::exit(1);
+    let m = match &cli.command {
+        Some(Commands::Txt { address }) => Message::txt(valid(address)),
+        Some(Commands::Cname { address }) => Message::cname(valid(address)),
+        Some(Commands::A { address }) => Message::a(valid(address)),
+        None => {
+            if let Some(address) = &cli.address {
+                Message::a(valid(address))
+            } else {
+                eprintln!("You must supply a valid address as a first argument");
+                process::exit(1);
+            }
         }
     };
 
@@ -58,7 +69,6 @@ async fn main() -> Result<()> {
         .await
         .context("could not bind")?;
 
-    let m = Message::single(args.address);
     let m = m.serialize().context("Failed to serialize request")?;
 
     let mut buffer = [0; 1024];
@@ -90,6 +100,16 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+fn valid(address: &String) -> &str {
+    match validate(address) {
+        Ok(address) => address,
+        Err(msg) => {
+            eprintln!("{}", msg);
+            process::exit(1);
+        }
+    }
+}
+
 fn validate(address: &String) -> Result<&str> {
     let length_result = check_length(address);
     if !length_result {
@@ -117,8 +137,6 @@ fn setup_terminal(qd_count: u16, an_count: u16) -> Result<Terminal<CrosstermBack
         + MESSAGE_BLOCK_SIZE
         + an_count
         + STAT_BLOCK_SIZE;
-
-    dbg!(viewport_size);
 
     let stdout = io::stdout();
     enable_raw_mode().context("failed to enable raw mode")?;

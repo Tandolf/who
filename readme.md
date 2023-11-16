@@ -37,9 +37,9 @@ TODO:
 - [x] implement input validation.
 - [x] statistics section at the bottom
 - [x] dynamically update size of gui blocks in accordance to data recvd
-- [ ] add txt and cname flag to do such requests.
+- [x] add txt and cname flag to do such requests.
 - [ ] fancier formatting in the header section
 - [ ] print raw output `--raw`
 - [ ] implement more record types (soa, null, ns, ptr, hinfo)
 - [ ] implement ipv6 dns record types `rfc 3596` 
-- [ ] formatting for txt and cname requests.
+- [ ] Fix help menu so it looks good
