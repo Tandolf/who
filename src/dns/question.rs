@@ -59,6 +59,7 @@ impl Serialize for Question {
             QType::MAILB => todo!(),
             QType::MAILA => todo!(),
             QType::STAR => todo!(),
+            QType::AAAA => QType::AAAA as u8,
         };
         body.push(0);
         body.push(qtype);

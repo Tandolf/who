@@ -2,10 +2,10 @@ use nom::branch::alt;
 use nom::bytes::complete::take;
 use nom::combinator::map;
 use nom::error::{Error, ErrorKind, ParseError};
-use nom::number::complete::{be_u16, be_u32, u8};
+use nom::number::complete::{be_u128, be_u16, be_u32, u8};
 use nom::IResult;
 use nom::{bits, Err};
-use std::net::Ipv4Addr;
+use std::net::{Ipv4Addr, Ipv6Addr};
 use std::str;
 use std::time::Duration;
 
@@ -131,6 +131,7 @@ pub fn parse_qtype(buffer: &[u8]) -> VResult<&[u8], QType> {
         1 => QType::A,
         5 => QType::CNAME,
         16 => QType::TXT,
+        28 => QType::AAAA,
         _ => panic!("Unknown QType returned: {}", value),
     })(buffer)
 }
@@ -140,9 +141,11 @@ pub fn parse_rdlength(buffer: &[u8]) -> VResult<&[u8], u16> {
 }
 
 pub fn parse_ipv4(buffer: &[u8]) -> VResult<&[u8], Ipv4Addr> {
-    map(take(4usize), |value: &[u8]| {
-        Ipv4Addr::new(value[0], value[1], value[2], value[3])
-    })(buffer)
+    map(be_u32, |value: u32| Ipv4Addr::from(value))(buffer)
+}
+
+pub fn parse_ipv6(buffer: &[u8]) -> VResult<&[u8], Ipv6Addr> {
+    map(be_u128, |value: u128| Ipv6Addr::from(value))(buffer)
 }
 
 pub fn parse_ttl(buffer: &[u8]) -> VResult<&[u8], Duration> {

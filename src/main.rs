@@ -36,6 +36,7 @@ pub enum Commands {
     Txt { address: String },
     Cname { address: String },
     A { address: String },
+    AAAA { address: String },
 }
 
 #[derive(Parser)]
@@ -46,7 +47,7 @@ struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
 
-    #[arg(short, long)]
+    #[arg(short, long = "raw-records")]
     raw: bool,
 }
 
@@ -58,6 +59,7 @@ async fn main() -> Result<()> {
         Some(Commands::Txt { address }) => Message::txt(valid(address)),
         Some(Commands::Cname { address }) => Message::cname(valid(address)),
         Some(Commands::A { address }) => Message::a(valid(address)),
+        Some(Commands::AAAA { address }) => Message::aaaa(valid(address)),
         None => {
             if let Some(address) = &cli.address {
                 Message::a(valid(address))
@@ -218,6 +220,7 @@ fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
             dns::record::RData::A(ip) => ip.to_string(),
             dns::record::RData::CNAME(cname) => cname.to_string(),
             dns::record::RData::TXT(txt) => txt.to_string(),
+            dns::record::RData::AAAA(ip) => ip.to_string(),
         };
 
         Row::new(vec![

@@ -2,9 +2,11 @@ use nom::sequence::tuple;
 use nom::Finish;
 use std::fmt::Display;
 use std::net::Ipv4Addr;
+use std::net::Ipv6Addr;
 use std::time::Duration;
 
 use super::parse_utils::parse_ipv4;
+use super::parse_utils::parse_ipv6;
 use super::parse_utils::parse_names;
 use super::parse_utils::parse_qclass;
 use super::parse_utils::parse_qtype;
@@ -21,6 +23,7 @@ pub enum RData {
     A(Ipv4Addr),
     CNAME(String),
     TXT(String),
+    AAAA(Ipv6Addr),
 }
 
 impl Display for RData {
@@ -29,6 +32,7 @@ impl Display for RData {
             RData::A(value) => write!(f, "{}", value),
             RData::CNAME(value) => write!(f, "{}", value),
             RData::TXT(value) => write!(f, "{}", value),
+            RData::AAAA(value) => write!(f, "{}", value),
         }
     }
 }
@@ -132,6 +136,10 @@ fn parse_record<'a>(buffer: &'a [u8], source: &'a [u8]) -> VResult<&'a [u8], Rec
         QType::TXT => {
             let (buffer, txt) = take_token(buffer, rd_length.into())?;
             (buffer, RData::TXT(txt.to_owned()))
+        }
+        QType::AAAA => {
+            let (buffer, address) = parse_ipv6(buffer)?;
+            (buffer, RData::AAAA(address))
         }
         _ => unimplemented!(),
     };

@@ -31,12 +31,13 @@ Output
 - A
 - CNAME
 - TXT
+- AAAA (ipv6, [rfc 3596](https://datatracker.ietf.org/doc/html/rfc3596))
 
 TODO:
-- [ ] implement ipv6 dns record types `rfc 3596` 
 - [ ] fancier formatting in the header section
 - [ ] implement more record types (soa, null, ns, ptr, hinfo)
 - [ ] Fix help menu so it looks good
+- [x] implement ipv6 dns record types `rfc 3596` 
 - [x] print raw output `--raw`
 - [x] add ttl and rdata to records
 - [x] implement input validation.

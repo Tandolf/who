@@ -61,6 +61,15 @@ impl Message {
         }
     }
 
+    pub fn aaaa(name: impl Into<String>) -> Message {
+        let id = random::<u16>();
+        Self {
+            header: Header::request(id),
+            question: Question::new(name, QType::AAAA, QClass::IN),
+            records: Vec::with_capacity(0),
+        }
+    }
+
     pub fn txt(name: impl Into<String>) -> Message {
         let id = random::<u16>();
         Self {
