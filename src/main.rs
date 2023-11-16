@@ -45,6 +45,9 @@ struct Cli {
 
     #[command(subcommand)]
     command: Option<Commands>,
+
+    #[arg(short, long)]
+    raw: bool,
 }
 
 #[tokio::main]
@@ -91,11 +94,17 @@ async fn main() -> Result<()> {
         msg_rcvd: msg_length,
         current_time: Local::now(),
     };
-    let mut terminal =
-        setup_terminal(message.header.qd_count, message.header.an_count).context("setup failed")?;
-    terminal.draw(|f| render_app(f, &message, &stats))?;
-    disable_raw_mode().context("failed to disable raw mode")?;
-    let _ = terminal.show_cursor().context("unable to show cursor");
+    if !cli.raw {
+        let mut terminal = setup_terminal(message.header.qd_count, message.header.an_count)
+            .context("setup failed")?;
+        terminal.draw(|f| render_app(f, &message, &stats))?;
+        disable_raw_mode().context("failed to disable raw mode")?;
+        let _ = terminal.show_cursor().context("unable to show cursor");
+    } else {
+        for r in message.records {
+            println!("{}", r);
+        }
+    }
 
     Ok(())
 }

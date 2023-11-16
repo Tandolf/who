@@ -113,16 +113,6 @@ impl Record {
 }
 
 fn parse_record<'a>(buffer: &'a [u8], source: &'a [u8]) -> VResult<&'a [u8], Record> {
-    // If a pointer, then get the value from the cache
-    // let (buffer, name) = match buffer[0] {
-    //     0xC0 => {
-    //         let index = buffer[1] as usize;
-    //         let (_, name) = parse_name(&source[index..])?;
-    //         (&buffer[2..], name)
-    //     }
-    //     _ => parse_name(buffer)?,
-    // };
-    //
     let mut t = Vec::new();
     let (buffer, name) = parse_names(buffer, source, &mut t)?;
 
@@ -168,9 +158,9 @@ impl<'a> DeSerialize<'a> for Record {
 
 impl Display for Record {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(
+        write!(
             f,
-            ";{}\t\t\t{}\t{}\t{}\t{}",
+            "{}\t\t\t{}\t{}\t{}\t{}",
             self.name,
             self.ttl.as_secs(),
             self.qclass,

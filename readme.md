@@ -33,13 +33,13 @@ Output
 - TXT
 
 TODO:
+- [ ] implement ipv6 dns record types `rfc 3596` 
+- [ ] fancier formatting in the header section
+- [ ] implement more record types (soa, null, ns, ptr, hinfo)
+- [ ] Fix help menu so it looks good
+- [x] print raw output `--raw`
 - [x] add ttl and rdata to records
 - [x] implement input validation.
 - [x] statistics section at the bottom
 - [x] dynamically update size of gui blocks in accordance to data recvd
 - [x] add txt and cname flag to do such requests.
-- [ ] fancier formatting in the header section
-- [ ] print raw output `--raw`
-- [ ] implement more record types (soa, null, ns, ptr, hinfo)
-- [ ] implement ipv6 dns record types `rfc 3596` 
-- [ ] Fix help menu so it looks good
