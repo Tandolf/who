@@ -29,13 +29,18 @@ $ who blog.toerktumlare.com
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Current supported record types
+### Supported record types
 - A
 - CNAME
 - TXT
 - AAAA (ipv6, [rfc 3596](https://datatracker.ietf.org/doc/html/rfc3596))
 - NS
 - MX
+
+### Unsupported record types
+- WKS (as declared in [rfc 1123](https://www.rfc-editor.org/rfc/rfc1123#page-55) 5.2.12)
+- MD (obsoleted by MX)
+- MF (obsoleted by MX)
 
 ## help
 There are support for several type of queries, all documented in the help menu.
@@ -95,7 +100,7 @@ tandolf.github.io			3600	IN	A	185.199.110.153
 
 TODO:
 - [ ] fancier formatting in the header section
-- [ ] implement more record types (soa, null, ns, ptr, hinfo)
+- [ ] SOA records
 - [x] Fix help menu so it looks good
 - [x] implement ipv6 dns record types `rfc 3596` 
 - [x] print raw output `--raw`
