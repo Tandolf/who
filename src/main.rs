@@ -201,12 +201,18 @@ fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
         " == ".into(),
     ]);
 
-    frame.render_widget(Paragraph::new(program_info), inner[0]);
+    frame.render_widget(Paragraph::new(program_info).fg(Color::White), inner[0]);
 
     // Header
     frame.render_widget(
         Paragraph::new(format!("{}", message.header))
-            .block(Block::new().title("Header").borders(Borders::ALL)),
+            .fg(Color::White)
+            .block(
+                Block::new()
+                    .title("Header")
+                    .borders(Borders::ALL)
+                    .fg(Color::Green),
+            ),
         inner[1],
     );
 
@@ -216,10 +222,16 @@ fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
         Cell::from(""),
         Cell::from(message.question.qclass.to_string()),
         Cell::from(message.question.qtype.to_string()),
-    ]);
+    ])
+    .fg(Color::White);
 
     let t = Table::new(vec![row])
-        .block(Block::new().title("Message").borders(Borders::ALL))
+        .block(
+            Block::new()
+                .title("Message")
+                .borders(Borders::ALL)
+                .fg(Color::Green),
+        )
         .widths(&[
             Constraint::Percentage(25),
             Constraint::Percentage(10),
@@ -246,10 +258,16 @@ fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
             Cell::from(r.qtype.to_string()),
             Cell::from(string_data),
         ])
+        .fg(Color::White)
     });
 
     let record_table = Table::new(record_rows)
-        .block(Block::new().title("Records").borders(Borders::ALL))
+        .block(
+            Block::new()
+                .title("Records")
+                .borders(Borders::ALL)
+                .fg(Color::Green),
+        )
         .widths(&[
             Constraint::Percentage(25),
             Constraint::Percentage(10),
@@ -294,6 +312,12 @@ fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
     ]);
 
     let t = Paragraph::new(vec![query_time, current_time, message_sent, message_rcvd])
-        .block(Block::new().title("Statistics").borders(Borders::ALL));
+        .block(
+            Block::new()
+                .title("Statistics")
+                .borders(Borders::ALL)
+                .fg(Color::Green),
+        )
+        .fg(Color::White);
     frame.render_widget(t, inner[4]);
 }

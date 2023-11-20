@@ -94,7 +94,7 @@ tandolf.github.io			3600	IN	A	185.199.110.153
 TODO:
 - [ ] fancier formatting in the header section
 - [ ] implement more record types (soa, null, ns, ptr, hinfo)
-- [ ] Fix help menu so it looks good
+- [x] Fix help menu so it looks good
 - [x] implement ipv6 dns record types `rfc 3596` 
 - [x] print raw output `--raw`
 - [x] add txt and cname flag to do such requests.
