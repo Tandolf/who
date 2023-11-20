@@ -131,6 +131,7 @@ pub fn parse_qtype(buffer: &[u8]) -> VResult<&[u8], QType> {
         1 => QType::A,
         2 => QType::NS,
         5 => QType::CNAME,
+        15 => QType::MX,
         16 => QType::TXT,
         28 => QType::AAAA,
         _ => panic!("Unknown QType returned: {}", value),

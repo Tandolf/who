@@ -53,7 +53,7 @@ impl Serialize for Question {
             QType::PTR => todo!(),
             QType::HINFO => todo!(),
             QType::MINFO => todo!(),
-            QType::MX => todo!(),
+            QType::MX => QType::MX as u8,
             QType::TXT => QType::TXT as u8,
             QType::AXFR => todo!(),
             QType::MAILB => todo!(),

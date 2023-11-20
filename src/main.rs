@@ -43,8 +43,10 @@ pub enum Commands {
     A { domain: String },
     #[command(long_about = "fetch AAAA (ipv6) records")]
     AAAA { domain: String },
-    #[command(long_about = "return NS (name server) records")]
+    #[command(long_about = "fetch NS (name server) records")]
     NS { domain: String },
+    #[command(long_about = "fetch MX records")]
+    MX { domain: String },
 }
 
 #[derive(Parser)]
@@ -75,6 +77,7 @@ async fn main() -> Result<()> {
         Some(Commands::A { domain }) => Message::a(valid(domain)),
         Some(Commands::AAAA { domain }) => Message::aaaa(valid(domain)),
         Some(Commands::NS { domain }) => Message::ns(valid(domain)),
+        Some(Commands::MX { domain }) => Message::mx(valid(domain)),
         None => {
             if let Some(address) = &cli.domain {
                 Message::a(valid(address))
@@ -249,6 +252,10 @@ fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
             dns::record::RData::TXT(txt) => txt.to_string(),
             dns::record::RData::AAAA(ip) => ip.to_string(),
             dns::record::RData::NS(ns) => ns.to_string(),
+            dns::record::RData::MX {
+                preference,
+                exchange,
+            } => format!("{} {}", preference, exchange),
         };
 
         Row::new(vec![

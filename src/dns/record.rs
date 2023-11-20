@@ -1,3 +1,4 @@
+use nom::number::complete::be_u16;
 use nom::sequence::tuple;
 use nom::Finish;
 use std::fmt::Display;
@@ -25,6 +26,7 @@ pub enum RData {
     TXT(String),
     AAAA(Ipv6Addr),
     NS(String),
+    MX { preference: u16, exchange: String },
 }
 
 impl Display for RData {
@@ -35,6 +37,10 @@ impl Display for RData {
             RData::TXT(value) => write!(f, "{}", value),
             RData::AAAA(value) => write!(f, "{}", value),
             RData::NS(value) => write!(f, "{}", value),
+            RData::MX {
+                preference,
+                exchange,
+            } => write!(f, "{} {}", preference, exchange),
         }
     }
 }
@@ -146,6 +152,17 @@ fn parse_record<'a>(buffer: &'a [u8], source: &'a [u8]) -> VResult<&'a [u8], Rec
         QType::NS => {
             let (buffer, name) = parse_names(buffer, source, &mut t)?;
             (buffer, RData::NS(name))
+        }
+        QType::MX => {
+            let (buffer, preference) = be_u16(buffer)?;
+            let (buffer, exchange) = parse_names(buffer, source, &mut t)?;
+            (
+                buffer,
+                RData::MX {
+                    preference,
+                    exchange,
+                },
+            )
         }
         _ => unimplemented!(),
     };

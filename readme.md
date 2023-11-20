@@ -35,6 +35,7 @@ $ who blog.toerktumlare.com
 - TXT
 - AAAA (ipv6, [rfc 3596](https://datatracker.ietf.org/doc/html/rfc3596))
 - NS
+- MX
 
 ## help
 There are support for several type of queries, all documented in the help menu.
@@ -51,7 +52,8 @@ Commands:
   cname  fetch cname records
   a      fetch A (ipv4) records
   aaaa   fetch AAAA (ipv6) records
-  ns     return NS (name server) records
+  ns     fetch NS (name server) records
+  mx     fetch MX records
   help   Print this message or the help of the given subcommand(s)
 
 Arguments:

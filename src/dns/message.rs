@@ -78,12 +78,11 @@ impl Message {
     }
 
     pub fn cname(name: impl Into<String>) -> Message {
-        let id = random::<u16>();
-        Self {
-            header: Header::request(id),
-            question: Question::new(name, QType::CNAME, QClass::IN),
-            records: Vec::with_capacity(0),
-        }
+        Message::new(name, QType::CNAME)
+    }
+
+    pub fn mx(name: impl Into<String>) -> Message {
+        Message::new(name, QType::MX)
     }
 }
 
