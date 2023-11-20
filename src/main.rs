@@ -195,7 +195,7 @@ fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
     let program_info = Line::from(vec![
         "== Who are you? ==".into(),
         " ".into(),
-        "v1.0.0".into(),
+        format!("v{}", VERSION).into(),
         " == ".into(),
         message.question.qname.clone().into(),
         " == ".into(),
