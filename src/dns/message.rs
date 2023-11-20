@@ -84,6 +84,10 @@ impl Message {
     pub fn mx(name: impl Into<String>) -> Message {
         Message::new(name, QType::MX)
     }
+
+    pub fn soa(name: impl Into<String>) -> Message {
+        Message::new(name, QType::SOA)
+    }
 }
 
 // OPCODE

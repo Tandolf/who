@@ -1,4 +1,5 @@
 use nom::number::complete::be_u16;
+use nom::number::complete::be_u32;
 use nom::sequence::tuple;
 use nom::Finish;
 use std::fmt::Display;
@@ -26,21 +27,45 @@ pub enum RData {
     TXT(String),
     AAAA(Ipv6Addr),
     NS(String),
-    MX { preference: u16, exchange: String },
+    MX {
+        preference: u16,
+        exchange: String,
+    },
+    SOA {
+        mname: String,
+        rname: String,
+        serial: u32,
+        refresh: u32,
+        retry: u32,
+        expire: u32,
+        minimum: u32,
+    },
 }
 
 impl Display for RData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RData::A(value) => write!(f, "{}", value),
-            RData::CNAME(value) => write!(f, "{}", value),
-            RData::TXT(value) => write!(f, "{}", value),
-            RData::AAAA(value) => write!(f, "{}", value),
-            RData::NS(value) => write!(f, "{}", value),
+            RData::A(value) => write!(f, "{value}"),
+            RData::CNAME(value) => write!(f, "{value}"),
+            RData::TXT(value) => write!(f, "{value}"),
+            RData::AAAA(value) => write!(f, "{value}"),
+            RData::NS(value) => write!(f, "{value}"),
             RData::MX {
                 preference,
                 exchange,
-            } => write!(f, "{} {}", preference, exchange),
+            } => write!(f, "{preference} {exchange}"),
+            RData::SOA {
+                mname,
+                rname,
+                serial,
+                refresh,
+                retry,
+                expire,
+                minimum,
+            } => write!(
+                f,
+                "{mname}, {rname}, {serial}, {refresh}, {retry}, {expire}, {minimum}"
+            ),
         }
     }
 }
@@ -161,6 +186,24 @@ fn parse_record<'a>(buffer: &'a [u8], source: &'a [u8]) -> VResult<&'a [u8], Rec
                 RData::MX {
                     preference,
                     exchange,
+                },
+            )
+        }
+        QType::SOA => {
+            let (buffer, mname) = parse_names(buffer, source, &mut t)?;
+            let (buffer, rname) = parse_names(buffer, source, &mut t)?;
+            let (buffer, (serial, refresh, retry, expire, minimum)) =
+                tuple((be_u32, be_u32, be_u32, be_u32, be_u32))(buffer)?;
+            (
+                buffer,
+                RData::SOA {
+                    mname,
+                    rname,
+                    serial,
+                    refresh,
+                    retry,
+                    expire,
+                    minimum,
                 },
             )
         }

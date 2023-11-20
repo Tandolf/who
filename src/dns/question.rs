@@ -44,7 +44,7 @@ impl Serialize for Question {
             QType::MD => unimplemented!("Obsolete, use MX command instead"),
             QType::MF => unimplemented!("Obsolete, use MX command instead"),
             QType::CNAME => QType::CNAME as u8,
-            QType::SOA => todo!(),
+            QType::SOA => QType::SOA as u8,
             QType::MB => todo!(),
             QType::MG => todo!(),
             QType::MR => todo!(),

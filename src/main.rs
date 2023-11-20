@@ -47,6 +47,8 @@ pub enum Commands {
     NS { domain: String },
     #[command(long_about = "fetch MX records")]
     MX { domain: String },
+    #[command(long_about = "fetch SOA records")]
+    SOA { domain: String },
 }
 
 #[derive(Parser)]
@@ -78,6 +80,7 @@ async fn main() -> Result<()> {
         Some(Commands::AAAA { domain }) => Message::aaaa(valid(domain)),
         Some(Commands::NS { domain }) => Message::ns(valid(domain)),
         Some(Commands::MX { domain }) => Message::mx(valid(domain)),
+        Some(Commands::SOA { domain }) => Message::soa(valid(domain)),
         None => {
             if let Some(address) = &cli.domain {
                 Message::a(valid(address))
@@ -181,7 +184,7 @@ fn setup_terminal(qd_count: u16, an_count: u16) -> Result<Terminal<CrosstermBack
 fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
     let outer = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints(vec![Constraint::Percentage(70), Constraint::Percentage(30)])
+        .constraints(vec![Constraint::Percentage(40), Constraint::Percentage(60)])
         .split(frame.size());
 
     let inner = Layout::default()
@@ -236,10 +239,10 @@ fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
                 .fg(Color::Green),
         )
         .widths(&[
-            Constraint::Percentage(25),
+            Constraint::Percentage(30),
             Constraint::Percentage(10),
-            Constraint::Percentage(10),
-            Constraint::Percentage(10),
+            Constraint::Percentage(15),
+            Constraint::Percentage(15),
         ]);
 
     frame.render_widget(t, inner[2]);
@@ -255,7 +258,16 @@ fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
             dns::record::RData::MX {
                 preference,
                 exchange,
-            } => format!("{} {}", preference, exchange),
+            } => format!("{preference} {exchange}"),
+            dns::record::RData::SOA {
+                mname,
+                rname,
+                serial,
+                refresh,
+                retry,
+                expire,
+                minimum,
+            } => format!("{mname} {rname} {serial} {refresh} {retry} {expire} {minimum}"),
         };
 
         Row::new(vec![
@@ -276,11 +288,11 @@ fn render_app(frame: &mut Frame, message: &Message, stats: &Statistics) {
                 .fg(Color::Green),
         )
         .widths(&[
-            Constraint::Percentage(25),
+            Constraint::Percentage(30),
             Constraint::Percentage(10),
-            Constraint::Percentage(10),
-            Constraint::Percentage(10),
-            Constraint::Percentage(45),
+            Constraint::Percentage(15),
+            Constraint::Percentage(15),
+            Constraint::Percentage(40),
         ]);
     frame.render_widget(record_table, inner[3]);
 
