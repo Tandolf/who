@@ -36,6 +36,7 @@ $ who blog.toerktumlare.com
 - AAAA (ipv6, [rfc 3596](https://datatracker.ietf.org/doc/html/rfc3596))
 - NS
 - MX
+- SOA
 
 ### Unsupported record types
 - WKS (as declared in [rfc 1123](https://www.rfc-editor.org/rfc/rfc1123#page-55) 5.2.12)
@@ -100,7 +101,8 @@ tandolf.github.io			3600	IN	A	185.199.110.153
 
 TODO:
 - [ ] fancier formatting in the header section
-- [ ] SOA records
+- [ ] make tui dynamic on width depending on record data length
+- [x] SOA records
 - [x] Fix help menu so it looks good
 - [x] implement ipv6 dns record types `rfc 3596` 
 - [x] print raw output `--raw`
