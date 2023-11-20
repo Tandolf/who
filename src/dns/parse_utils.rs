@@ -36,30 +36,6 @@ fn resolve_next(buffer: &[u8]) -> IResult<&[u8], CtrlByte> {
     alt((bits(parse_ptr), parse_nullbyte, parse_length_byte))(buffer)
 }
 
-// pub fn parse_names<'a>(
-//     buffer: &'a [u8],
-//     source: &'a [u8],
-//     tokens: &mut Vec<String>,
-// ) -> VResult<&'a [u8], String> {
-//     let mut b = buffer;
-//     loop {
-//         let next = b[0];
-//         if is_ptr(next) {
-//             let (buf, index) = ptr_value(b)?;
-//             let (_, _) = parse_names(&source[index..], source, tokens)?;
-//             b = buf;
-//             break;
-//         } else if next == 0x00 {
-//             break;
-//         }
-//         let (buf, length) = u8::<&[u8], Error<&[u8]>>(b)?;
-//         let (buf, token) = take_token(buf, length as usize)?;
-//         tokens.push(token.to_owned());
-//         b = buf;
-//     }
-//     Ok((&b, tokens.join(".")))
-// }
-
 pub fn parse_names<'a>(
     buffer: &'a [u8],
     source: &'a [u8],
