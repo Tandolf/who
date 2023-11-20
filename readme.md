@@ -60,6 +60,7 @@ Commands:
   aaaa   fetch AAAA (ipv6) records
   ns     fetch NS (name server) records
   mx     fetch MX records
+  soa    fetch SOA records
   help   Print this message or the help of the given subcommand(s)
 
 Arguments:
