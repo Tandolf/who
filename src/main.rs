@@ -24,6 +24,8 @@ const QUESTION_BLOCK_SIZE: u16 = 2;
 const MESSAGE_BLOCK_SIZE: u16 = 2;
 const STAT_BLOCK_SIZE: u16 = 6;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 struct Statistics {
     pub query_time: Duration,
     pub msg_sent: usize,
@@ -33,17 +35,28 @@ struct Statistics {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    Txt { address: String },
-    Cname { address: String },
-    A { address: String },
-    AAAA { address: String },
-    NS { address: String },
+    #[command(long_about = "fetch text records")]
+    Txt { domain: String },
+    #[command(long_about = "fetch cname records")]
+    Cname { domain: String },
+    #[command(long_about = "fetch A (ipv4) records")]
+    A { domain: String },
+    #[command(long_about = "fetch AAAA (ipv6) records")]
+    AAAA { domain: String },
+    #[command(long_about = "return NS (name server) records")]
+    NS { domain: String },
 }
 
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(
+    author,
+    version,
+    about = format!("== Who are you? == v{}", VERSION),
+    long_about = format!("== Who are you? == v{} ==\n\na simple dns client written in rust to perform the most common dns queries.", VERSION),
+)]
 struct Cli {
-    address: Option<String>,
+    #[arg(help = "the domain you are asking for")]
+    domain: Option<String>,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -57,13 +70,13 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     let m = match &cli.command {
-        Some(Commands::Txt { address }) => Message::txt(valid(address)),
-        Some(Commands::Cname { address }) => Message::cname(valid(address)),
-        Some(Commands::A { address }) => Message::a(valid(address)),
-        Some(Commands::AAAA { address }) => Message::aaaa(valid(address)),
-        Some(Commands::NS { address }) => Message::ns(valid(address)),
+        Some(Commands::Txt { domain }) => Message::txt(valid(domain)),
+        Some(Commands::Cname { domain }) => Message::cname(valid(domain)),
+        Some(Commands::A { domain }) => Message::a(valid(domain)),
+        Some(Commands::AAAA { domain }) => Message::aaaa(valid(domain)),
+        Some(Commands::NS { domain }) => Message::ns(valid(domain)),
         None => {
-            if let Some(address) = &cli.address {
+            if let Some(address) = &cli.domain {
                 Message::a(valid(address))
             } else {
                 eprintln!("You must supply a valid address as a first argument");
